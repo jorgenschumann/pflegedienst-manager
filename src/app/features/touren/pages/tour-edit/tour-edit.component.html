@@ -1,0 +1,76 @@
+@if (tour(); as t) {
+  <div class="field">
+    <label for="employee">Mitarbeiter/-in</label>
+    <p-select
+      id="employee"
+      [ngModel]="t.employeeId"
+      (ngModelChange)="onEmployeeChange($event)"
+      [options]="employeeOptions()"
+      optionLabel="label"
+      optionValue="value"
+    />
+  </div>
+
+  <h4 class="section-title">Besuche</h4>
+
+  <div class="visit-edit-list">
+    @for (visit of visits(); track visit.id) {
+      <div class="visit-edit-row">
+        <span class="visit-sequence">{{ visit.sequence }}.</span>
+
+        <p-select
+          class="patient-select"
+          [ngModel]="visit.patientId"
+          (ngModelChange)="onPatientChange(visit.id, $event)"
+          [options]="patientOptionsForVisit(visit.id, visit.patientId)"
+          optionLabel="label"
+          optionValue="value"
+        />
+
+        <input
+          type="time"
+          class="time-input"
+          [ngModel]="visit.plannedStart"
+          (ngModelChange)="onTimeChange(visit.id, 'plannedStart', $event)"
+        />
+        <span class="time-sep">–</span>
+        <input
+          type="time"
+          class="time-input"
+          [ngModel]="visit.plannedEnd"
+          (ngModelChange)="onTimeChange(visit.id, 'plannedEnd', $event)"
+        />
+
+        <p-multiselect
+          class="leistungen-select"
+          [ngModel]="visit.leistungen"
+          (ngModelChange)="onLeistungenChange(visit.id, $event)"
+          [options]="leistungOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Leistungen"
+        />
+
+        <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="removeVisit(visit.id)" />
+      </div>
+    }
+  </div>
+
+  <div class="add-visit-row">
+    <p-select
+      [(ngModel)]="selectedNewPatientId"
+      [options]="availablePatientOptions()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Patient auswählen"
+      [style]="{ minWidth: '14rem' }"
+    />
+    <p-button label="Besuch hinzufügen" icon="pi pi-plus" [disabled]="!selectedNewPatientId" (onClick)="addVisit()" />
+  </div>
+
+  <div class="form-actions">
+    <p-button label="Schließen" (onClick)="close.emit()" />
+  </div>
+} @else {
+  <p>Tour nicht gefunden.</p>
+}

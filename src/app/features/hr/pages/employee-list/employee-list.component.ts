@@ -46,6 +46,18 @@ export class EmployeeListComponent {
     this.dialogVisible.set(false);
   }
 
+  private readonly roleLabels: Record<Employee['role'], string> = {
+    PFLEGEFACHKRAFT: 'Pflegefachkraft',
+    PFLEGEHELFER: 'Pflegehelfer',
+    ERGAENZENDE_HILFE: 'Ergänzende Hilfe',
+    TEAMLEITUNG: 'Teamleitung',
+    VERWALTUNG: 'Verwaltung'
+  };
+
+  roleLabel(role: Employee['role']): string {
+    return this.roleLabels[role];
+  }
+
   employmentTypeSeverity(type: string): 'success' | 'info' | 'warn' {
     switch (type) {
       case 'VOLLZEIT':

@@ -23,6 +23,8 @@ export class AppShellComponent {
     { label: 'Dashboard', icon: 'pi pi-home', route: '/dashboard' },
     { label: 'Mitarbeiter', icon: 'pi pi-users', route: '/hr/mitarbeiter' },
     { label: 'Dienstplan', icon: 'pi pi-calendar', route: '/hr/dienstplan' },
+    { label: 'Patienten', icon: 'pi pi-heart', route: '/patienten' },
+    { label: 'Touren', icon: 'pi pi-map', route: '/touren' },
     { label: 'Abwesenheiten', icon: 'pi pi-briefcase', route: '/hr/abwesenheiten' }
   ];
 

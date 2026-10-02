@@ -1,0 +1,123 @@
+@if (patient(); as p) {
+  <div class="detail-header">
+    <p-button icon="pi pi-arrow-left" [text]="true" (onClick)="goBack()" />
+    <div>
+      <h2>{{ p.firstName }} {{ p.lastName }}</h2>
+      <span class="subtitle">{{ age(p.dateOfBirth) }} Jahre · {{ p.address.city }}</span>
+    </div>
+    <p-tag [value]="p.pflegegrad > 0 ? ('Pflegegrad ' + p.pflegegrad) : 'Kein Pflegegrad'" [severity]="pflegegradSeverity(p.pflegegrad)" />
+  </div>
+
+  <p-tabs value="stammdaten">
+    <p-tablist>
+      <p-tab value="stammdaten">Stammdaten</p-tab>
+      <p-tab value="sis">SIS-Dokumentation</p-tab>
+      <p-tab value="risiken">Risikoeinschätzungen</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <p-tabpanel value="stammdaten">
+        <div class="stammdaten-grid">
+          <p-card header="Kontakt & Adresse">
+            <dl>
+              <dt>Adresse</dt>
+              <dd>{{ p.address.street }}, {{ p.address.zip }} {{ p.address.city }}</dd>
+              <dt>Telefon</dt>
+              <dd>{{ p.phone }}</dd>
+              @if (p.email) {
+                <dt>E-Mail</dt>
+                <dd>{{ p.email }}</dd>
+              }
+              <dt>Geburtsdatum</dt>
+              <dd>{{ p.dateOfBirth | date: 'dd.MM.yyyy' }}</dd>
+            </dl>
+          </p-card>
+
+          <p-card header="Versicherung">
+            <dl>
+              <dt>Art</dt>
+              <dd>{{ p.insurance.type === 'GKV' ? 'Gesetzlich (GKV)' : 'Privat (PKV)' }}</dd>
+              <dt>Krankenkasse</dt>
+              <dd>{{ p.insurance.providerName }}</dd>
+              <dt>Versichertennummer</dt>
+              <dd>{{ p.insurance.insuranceNumber }}</dd>
+            </dl>
+          </p-card>
+
+          @if (p.legalRepresentative; as rep) {
+            <p-card header="Rechtliche Vertretung">
+              <dl>
+                <dt>Name</dt>
+                <dd>{{ rep.name }} ({{ rep.relationship }})</dd>
+                <dt>Telefon</dt>
+                <dd>{{ rep.phone }}</dd>
+                <dt>Art</dt>
+                <dd>{{ rep.isLegalGuardian ? 'Gerichtlich bestellte Betreuung' : 'Vorsorgevollmacht' }}</dd>
+              </dl>
+            </p-card>
+          }
+
+          <p-card header="Notfallkontakt">
+            <dl>
+              <dt>Name</dt>
+              <dd>{{ p.emergencyContact.name }} ({{ p.emergencyContact.relationship }})</dd>
+              <dt>Telefon</dt>
+              <dd>{{ p.emergencyContact.phone }}</dd>
+            </dl>
+          </p-card>
+        </div>
+      </p-tabpanel>
+
+      <p-tabpanel value="sis">
+        @if (sisRecord(); as sis) {
+          <p-card header="Biografie & Gewohnheiten">
+            <textarea
+              pTextarea
+              rows="3"
+              [ngModel]="sis.biografieNotizen"
+              (ngModelChange)="updateBiografie($event)"
+            ></textarea>
+          </p-card>
+
+          <div class="themenfelder-grid">
+            @for (tf of sis.themenfelder; track tf.code) {
+              <p-card [header]="themenfeldLabels[tf.code]">
+                <textarea
+                  pTextarea
+                  rows="4"
+                  [ngModel]="tf.text"
+                  (ngModelChange)="updateThemenfeldText(tf.code, $event)"
+                ></textarea>
+              </p-card>
+            }
+          </div>
+
+          <p class="review-hint">Nächste Evaluation geplant: {{ sis.nextReviewDate | date: 'dd.MM.yyyy' }}</p>
+        } @else {
+          <p>Keine SIS-Dokumentation vorhanden.</p>
+        }
+      </p-tabpanel>
+
+      <p-tabpanel value="risiken">
+        <div class="risk-grid">
+          @for (assessment of riskAssessments(); track assessment.id) {
+            <p-card [header]="riskLabels[assessment.type]">
+              <div class="risk-body">
+                <p-tag [value]="assessment.riskLevel" [severity]="riskSeverity(assessment.riskLevel)" />
+                @if (assessment.score !== undefined) {
+                  <span class="risk-score">Score: {{ assessment.score }}</span>
+                }
+              </div>
+              <p class="risk-meta">
+                Letzte Einschätzung: {{ assessment.assessedAt | date: 'dd.MM.yyyy' }}<br />
+                Nächste Einschätzung: {{ assessment.nextAssessmentDate | date: 'dd.MM.yyyy' }}
+              </p>
+              <p-button label="Neu einschätzen" icon="pi pi-refresh" [text]="true" (onClick)="reassess(assessment)" />
+            </p-card>
+          }
+        </div>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+} @else {
+  <p>Patient nicht gefunden.</p>
+}

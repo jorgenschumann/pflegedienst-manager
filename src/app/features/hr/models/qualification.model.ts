@@ -10,7 +10,8 @@ export type QualificationCode =
   | 'BEHANDLUNGSPFLEGE_LG2' // Leistungsgruppe 2 nach SGB V (z.B. Injektionen, Wundversorgung)
   | 'WUNDMANAGER'
   | 'PRAXISANLEITER'
-  | 'FAHRERLAUBNIS_PKW';
+  | 'FAHRERLAUBNIS_PKW'
+  | 'BETREUUNGSKRAFT_43B'; // Zusätzliche Betreuungskraft nach § 43b / § 53c SGB XI (Ergänzende Hilfen)
 
 export interface Qualification {
   code: QualificationCode;

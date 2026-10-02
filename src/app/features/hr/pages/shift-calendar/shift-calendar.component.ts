@@ -35,7 +35,7 @@ export class ShiftCalendarComponent {
 
   readonly employees = this.hrState.activeEmployees;
 
-  readonly viewMode = signal<ViewMode>('calendar');
+  readonly viewMode = signal<ViewMode>('day');
   readonly selectedDay = signal<Date>(new Date());
 
   readonly dialogVisible = signal(false);

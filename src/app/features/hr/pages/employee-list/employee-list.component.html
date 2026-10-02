@@ -22,7 +22,7 @@
   <ng-template pTemplate="body" let-employee>
     <tr>
       <td>{{ employee.firstName }} {{ employee.lastName }}</td>
-      <td>{{ employee.role }}</td>
+      <td>{{ roleLabel(employee.role) }}</td>
       <td class="qualifications">
         @for (q of employee.qualifications; track q.code) {
           <p-tag [value]="q.label" severity="info" />

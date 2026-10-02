@@ -16,5 +16,20 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/hr/pages/shift-calendar/shift-calendar.component').then((m) => m.ShiftCalendarComponent)
   },
+  {
+    path: 'patienten',
+    loadComponent: () =>
+      import('./features/patients/pages/patient-list/patient-list.component').then((m) => m.PatientListComponent)
+  },
+  {
+    path: 'patienten/:id',
+    loadComponent: () =>
+      import('./features/patients/pages/patient-detail/patient-detail.component').then((m) => m.PatientDetailComponent)
+  },
+  {
+    path: 'touren',
+    loadComponent: () =>
+      import('./features/touren/pages/touren-plan/touren-plan.component').then((m) => m.TourenPlanComponent)
+  },
   { path: '**', redirectTo: 'dashboard' }
 ];

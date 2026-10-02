@@ -1,0 +1,83 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="patient-form">
+  <div class="field-row">
+    <div class="field">
+      <label for="firstName">Vorname</label>
+      <input id="firstName" type="text" pInputText formControlName="firstName" />
+    </div>
+    <div class="field">
+      <label for="lastName">Nachname</label>
+      <input id="lastName" type="text" pInputText formControlName="lastName" />
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="dateOfBirth">Geburtsdatum</label>
+      <p-datepicker id="dateOfBirth" formControlName="dateOfBirth" dateFormat="dd.mm.yy" [showIcon]="true" />
+    </div>
+    <div class="field">
+      <label for="phone">Telefon</label>
+      <input id="phone" type="text" pInputText formControlName="phone" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="street">Straße, Hausnummer</label>
+    <input id="street" type="text" pInputText formControlName="street" />
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="zip">PLZ</label>
+      <input id="zip" type="text" pInputText formControlName="zip" />
+    </div>
+    <div class="field field-grow">
+      <label for="city">Ort</label>
+      <input id="city" type="text" pInputText formControlName="city" />
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="insuranceType">Versicherungsart</label>
+      <p-select id="insuranceType" formControlName="insuranceType" [options]="insuranceTypeOptions" optionLabel="label" optionValue="value" />
+    </div>
+    <div class="field">
+      <label for="pflegegrad">Pflegegrad</label>
+      <p-select id="pflegegrad" formControlName="pflegegrad" [options]="pflegegradOptions" optionLabel="label" optionValue="value" />
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="insuranceProviderName">Krankenkasse</label>
+      <input id="insuranceProviderName" type="text" pInputText formControlName="insuranceProviderName" />
+    </div>
+    <div class="field">
+      <label for="insuranceNumber">Versichertennummer</label>
+      <input id="insuranceNumber" type="text" pInputText formControlName="insuranceNumber" />
+    </div>
+  </div>
+
+  <h4 class="section-title">Notfallkontakt</h4>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="emergencyContactName">Name</label>
+      <input id="emergencyContactName" type="text" pInputText formControlName="emergencyContactName" />
+    </div>
+    <div class="field">
+      <label for="emergencyContactRelationship">Beziehung</label>
+      <input id="emergencyContactRelationship" type="text" pInputText formControlName="emergencyContactRelationship" />
+    </div>
+    <div class="field">
+      <label for="emergencyContactPhone">Telefon</label>
+      <input id="emergencyContactPhone" type="text" pInputText formControlName="emergencyContactPhone" />
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <p-button label="Abbrechen" severity="secondary" [text]="true" type="button" (onClick)="cancel.emit()" />
+    <p-button label="Speichern" icon="pi pi-check" type="submit" />
+  </div>
+</form>

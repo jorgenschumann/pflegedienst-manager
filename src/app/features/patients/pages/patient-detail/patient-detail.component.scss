@@ -1,0 +1,76 @@
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+  }
+
+  .subtitle {
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+
+  p-tag {
+    margin-left: auto;
+  }
+}
+
+.stammdaten-grid,
+.themenfelder-grid,
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.themenfelder-grid {
+  margin-top: 1rem;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+
+  dt {
+    font-weight: 600;
+    color: #475569;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.review-hint {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.risk-body {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.risk-score {
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.risk-meta {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}

@@ -16,7 +16,7 @@ export interface Employee {
   lastName: string;
   email: string;
   phone: string;
-  role: 'PFLEGEFACHKRAFT' | 'PFLEGEHELFER' | 'TEAMLEITUNG' | 'VERWALTUNG';
+  role: 'PFLEGEFACHKRAFT' | 'PFLEGEHELFER' | 'ERGAENZENDE_HILFE' | 'TEAMLEITUNG' | 'VERWALTUNG';
   qualifications: Qualification[];
   contract: WorkingHoursContract;
   /** Für das Stammtouren-Prinzip: dauerhaft zugeordnete Tour-ID(s). */

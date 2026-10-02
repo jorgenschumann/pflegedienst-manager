@@ -35,6 +35,7 @@ export class EmployeeFormComponent {
   readonly roleOptions: RoleOption[] = [
     { label: 'Pflegefachkraft', value: 'PFLEGEFACHKRAFT' },
     { label: 'Pflegehelfer', value: 'PFLEGEHELFER' },
+    { label: 'Ergänzende Hilfe', value: 'ERGAENZENDE_HILFE' },
     { label: 'Teamleitung', value: 'TEAMLEITUNG' },
     { label: 'Verwaltung', value: 'VERWALTUNG' }
   ];

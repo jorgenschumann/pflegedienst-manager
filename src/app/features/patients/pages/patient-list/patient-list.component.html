@@ -1,0 +1,93 @@
+<p-toolbar>
+  <ng-template pTemplate="start">
+    <h2>Patienten</h2>
+  </ng-template>
+  <ng-template pTemplate="end">
+    <p-button label="Neuer Patient" icon="pi pi-plus" (onClick)="openNew()" />
+  </ng-template>
+</p-toolbar>
+
+<div class="filter-bar">
+  <p-iconfield class="search-field">
+    <p-inputicon class="pi pi-search" />
+    <input
+      pInputText
+      type="text"
+      placeholder="Suche nach Name, Adresse, Krankenkasse…"
+      [ngModel]="searchTerm()"
+      (ngModelChange)="searchTerm.set($event)"
+    />
+  </p-iconfield>
+
+  <p-select
+    [ngModel]="statusFilter()"
+    (ngModelChange)="statusFilter.set($event)"
+    [options]="statusOptions"
+    optionLabel="label"
+    optionValue="value"
+    [style]="{ minWidth: '10rem' }"
+  />
+
+  <p-select
+    [ngModel]="pflegegradFilter()"
+    (ngModelChange)="pflegegradFilter.set($event)"
+    [options]="pflegegradOptions"
+    optionLabel="label"
+    optionValue="value"
+    [style]="{ minWidth: '12rem' }"
+  />
+
+  <p-button label="Zurücksetzen" [text]="true" icon="pi pi-filter-slash" (onClick)="resetFilters()" />
+
+  <span class="result-count">{{ filteredPatients().length }} von {{ patients().length }} Patienten</span>
+</div>
+
+<p-table [value]="filteredPatients()" dataKey="id" [paginator]="true" [rows]="10" responsiveLayout="scroll">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Name</th>
+      <th>Alter</th>
+      <th>Adresse</th>
+      <th>Pflegegrad</th>
+      <th>Krankenkasse</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-patient>
+    <tr class="patient-row" (click)="openDetail(patient)">
+      <td>{{ patient.firstName }} {{ patient.lastName }}</td>
+      <td>{{ age(patient.dateOfBirth) }} Jahre</td>
+      <td>{{ patient.address.street }}, {{ patient.address.zip }} {{ patient.address.city }}</td>
+      <td>
+        @if (patient.pflegegrad > 0) {
+          <p-tag [value]="'PG ' + patient.pflegegrad" [severity]="pflegegradSeverity(patient.pflegegrad)" />
+        } @else {
+          <p-tag value="Kein PG" severity="secondary" />
+        }
+      </td>
+      <td>{{ patient.insurance.providerName }}</td>
+      <td>
+        <p-tag [value]="patient.active ? 'Aktiv' : 'Inaktiv'" [severity]="patient.active ? 'success' : 'danger'" />
+      </td>
+      <td class="actions">
+        <p-button icon="pi pi-pencil" [text]="true" (onClick)="edit(patient, $event)" />
+        @if (patient.active) {
+          <p-button icon="pi pi-user-minus" severity="danger" [text]="true" (onClick)="deactivate(patient, $event)" />
+        }
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="7">Keine Patienten gefunden.</td></tr>
+  </ng-template>
+</p-table>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [header]="editingPatient() ? 'Patient bearbeiten' : 'Neuer Patient'"
+  [modal]="true"
+  [style]="{ width: '36rem' }"
+>
+  <app-patient-form [patient]="editingPatient()" (save)="onSaved($event)" (cancel)="dialogVisible.set(false)" />
+</p-dialog>
