@@ -1,0 +1,61 @@
+<p-toolbar>
+  <ng-template pTemplate="start">
+    <h2>Mitarbeiter</h2>
+  </ng-template>
+  <ng-template pTemplate="end">
+    <p-button label="Neuer Mitarbeiter" icon="pi pi-plus" (onClick)="openNew()" />
+  </ng-template>
+</p-toolbar>
+
+<p-table [value]="employees()" dataKey="id" [paginator]="true" [rows]="10" responsiveLayout="scroll">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Name</th>
+      <th>Rolle</th>
+      <th>Qualifikationen</th>
+      <th>Vertrag</th>
+      <th>Arbeitszeitkonto</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-employee>
+    <tr>
+      <td>{{ employee.firstName }} {{ employee.lastName }}</td>
+      <td>{{ employee.role }}</td>
+      <td class="qualifications">
+        @for (q of employee.qualifications; track q.code) {
+          <p-tag [value]="q.label" severity="info" />
+        }
+      </td>
+      <td>
+        <p-tag [value]="employee.contract.employmentType" [severity]="employmentTypeSeverity(employee.contract.employmentType)" />
+        <span class="hours">{{ employee.contract.weeklyTargetHours }} h/Woche</span>
+      </td>
+      <td [class.negative]="employee.contract.timeAccountBalanceHours < 0">
+        {{ employee.contract.timeAccountBalanceHours }} h
+      </td>
+      <td>
+        <p-tag [value]="employee.active ? 'Aktiv' : 'Inaktiv'" [severity]="employee.active ? 'success' : 'danger'" />
+      </td>
+      <td class="actions">
+        <p-button icon="pi pi-pencil" [text]="true" (onClick)="edit(employee)" />
+        @if (employee.active) {
+          <p-button icon="pi pi-user-minus" severity="danger" [text]="true" (onClick)="deactivate(employee)" />
+        }
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="7">Keine Mitarbeiter vorhanden.</td></tr>
+  </ng-template>
+</p-table>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [header]="editingEmployee() ? 'Mitarbeiter bearbeiten' : 'Neuer Mitarbeiter'"
+  [modal]="true"
+  [style]="{ width: '32rem' }"
+>
+  <app-employee-form [employee]="editingEmployee()" (save)="onSaved($event)" (cancel)="dialogVisible.set(false)" />
+</p-dialog>

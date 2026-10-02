@@ -1,0 +1,41 @@
+<div class="day-resource-view">
+  <div class="grid-scroll" #scrollContainer>
+    <div class="grid-content" [style.width.px]="totalWidth + 160">
+      <div class="header-row">
+        <div class="corner"></div>
+        <div class="hour-labels" [style.width.px]="totalWidth">
+          @for (hour of hours; track hour) {
+            <div class="hour-label" [style.width.px]="hourWidth">{{ hour.toString().padStart(2, '0') }}:00</div>
+          }
+        </div>
+      </div>
+
+      @for (row of rows(); track row.employee.id) {
+        <div class="employee-row">
+          <div class="employee-label">{{ row.employee.firstName }} {{ row.employee.lastName }}</div>
+          <div
+            class="time-track"
+            [style.width.px]="totalWidth"
+            (click)="onRowClick($event, row.employee.id)"
+          >
+            @for (hour of hours; track hour) {
+              <div class="hour-gridline" [style.width.px]="hourWidth"></div>
+            }
+            @for (item of row.shifts; track item.shift.id) {
+              <div
+                class="shift-block"
+                [style.left.px]="item.left"
+                [style.width.px]="item.width"
+                [style.background]="item.color"
+                (click)="shiftClick.emit(item.shift)"
+              >
+                <span class="shift-time">{{ item.shift.startTime }} – {{ item.shift.endTime }}</span>
+                <span class="shift-type">{{ item.shift.type }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

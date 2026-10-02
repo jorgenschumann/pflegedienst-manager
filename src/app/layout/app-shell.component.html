@@ -1,0 +1,29 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <i class="pi pi-heart-fill"></i>
+      <span>Pflegedienst Manager</span>
+    </div>
+    <nav>
+      @for (item of navItems; track item.route) {
+        <a [routerLink]="item.route" routerLinkActive="active" class="nav-link">
+          <i [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+          @if (item.route === '/hr/abwesenheiten' && pendingAbsenceCount().length > 0) {
+            <span class="badge">{{ pendingAbsenceCount().length }}</span>
+          }
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <h1>Ambulanter Pflegedienst</h1>
+      <p-button icon="pi pi-user" [rounded]="true" [text]="true" />
+    </header>
+    <main class="page">
+      <router-outlet />
+    </main>
+  </div>
+</div>

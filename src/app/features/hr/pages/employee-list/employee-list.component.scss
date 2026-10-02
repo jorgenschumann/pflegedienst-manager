@@ -1,0 +1,25 @@
+.qualifications {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.hours {
+  margin-left: 0.5rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.negative {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+h2 {
+  margin: 0;
+}

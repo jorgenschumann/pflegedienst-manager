@@ -1,0 +1,47 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="employee-form">
+  <div class="field">
+    <label for="firstName">Vorname</label>
+    <input id="firstName" type="text" pInputText formControlName="firstName" />
+  </div>
+
+  <div class="field">
+    <label for="lastName">Nachname</label>
+    <input id="lastName" type="text" pInputText formControlName="lastName" />
+  </div>
+
+  <div class="field">
+    <label for="email">E-Mail</label>
+    <input id="email" type="email" pInputText formControlName="email" />
+  </div>
+
+  <div class="field">
+    <label for="phone">Telefon</label>
+    <input id="phone" type="text" pInputText formControlName="phone" />
+  </div>
+
+  <div class="field">
+    <label for="role">Rolle</label>
+    <p-select id="role" formControlName="role" [options]="roleOptions" optionLabel="label" optionValue="value" />
+  </div>
+
+  <div class="field">
+    <label for="employmentType">Beschäftigungsart</label>
+    <p-select
+      id="employmentType"
+      formControlName="employmentType"
+      [options]="employmentTypeOptions"
+      optionLabel="label"
+      optionValue="value"
+    />
+  </div>
+
+  <div class="field">
+    <label for="weeklyTargetHours">Soll-Wochenstunden</label>
+    <p-inputNumber id="weeklyTargetHours" formControlName="weeklyTargetHours" [min]="1" [max]="45" suffix=" h" />
+  </div>
+
+  <div class="form-actions">
+    <p-button label="Abbrechen" severity="secondary" [text]="true" type="button" (onClick)="cancel.emit()" />
+    <p-button label="Speichern" icon="pi pi-check" type="submit" />
+  </div>
+</form>

@@ -1,0 +1,37 @@
+<div class="kpi-grid">
+  <p-card header="Aktive Mitarbeiter">
+    <div class="kpi-value">{{ activeEmployees().length }}</div>
+  </p-card>
+
+  <p-card header="Schichten heute">
+    <div class="kpi-value">{{ todaysShifts().length }}</div>
+  </p-card>
+
+  <p-card header="Offene Urlaubs-/Abwesenheitsanträge">
+    <div class="kpi-value" [class.warn]="pendingAbsenceRequests().length > 0">
+      {{ pendingAbsenceRequests().length }}
+    </div>
+  </p-card>
+
+  <p-card header="Arbeitszeitkonto (Summe)">
+    <div class="kpi-value" [class.warn]="totalTimeAccountBalance() < 0">
+      {{ totalTimeAccountBalance() | number: '1.1-1' }} h
+    </div>
+  </p-card>
+</div>
+
+<p-card header="Heutige Schichten" styleClass="shift-card">
+  @if (todaysShifts().length === 0) {
+    <p>Keine Schichten für heute geplant.</p>
+  } @else {
+    <ul class="shift-list">
+      @for (shift of todaysShifts(); track shift.id) {
+        <li>
+          <span class="time">{{ shift.startTime }} – {{ shift.endTime }}</span>
+          <span class="type">{{ shift.type }}</span>
+          <p-tag [value]="shift.status" [severity]="shiftStatusSeverity(shift.status)" />
+        </li>
+      }
+    </ul>
+  }
+</p-card>

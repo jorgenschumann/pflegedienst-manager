@@ -1,0 +1,55 @@
+<div class="calendar-page">
+  <header class="calendar-header">
+    <h2>Dienstplan</h2>
+    <div class="header-actions">
+      <div class="view-toggle">
+        <p-button
+          label="Kalender"
+          [outlined]="viewMode() !== 'calendar'"
+          size="small"
+          (onClick)="showCalendarView()"
+        />
+        <p-button label="Tag (Mitarbeiter)" [outlined]="viewMode() !== 'day'" size="small" (onClick)="showDayView()" />
+      </div>
+      <p-button label="Neue Schicht" icon="pi pi-plus" (onClick)="openNewShift()" />
+    </div>
+  </header>
+
+  @if (viewMode() === 'calendar') {
+    <full-calendar [options]="calendarOptions()" />
+  } @else {
+    <div class="day-nav">
+      <p-button icon="pi pi-chevron-left" [text]="true" (onClick)="goToPreviousDay()" />
+      <div class="day-nav-label">
+        <span class="date">{{ selectedDayLabel() }}</span>
+        <button type="button" class="today-link" (click)="goToToday()">Heute</button>
+      </div>
+      <p-button icon="pi pi-chevron-right" [text]="true" (onClick)="goToNextDay()" />
+    </div>
+
+    <app-day-resource-view
+      [employees]="employees()"
+      [shifts]="dayShifts()"
+      (shiftClick)="onDayShiftClick($event)"
+      (slotClick)="onDaySlotClick($event)"
+    />
+  }
+</div>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [header]="editingShift() ? 'Schicht bearbeiten' : 'Neue Schicht'"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+>
+  <app-shift-form
+    [shift]="editingShift()"
+    [prefilledDate]="prefilledDate()"
+    [prefilledEmployeeId]="prefilledEmployeeId()"
+    [prefilledStartTime]="prefilledStartTime()"
+    [employees]="employees()"
+    (save)="onSave($event)"
+    (delete)="onDelete()"
+    (cancel)="dialogVisible.set(false)"
+  />
+</p-dialog>

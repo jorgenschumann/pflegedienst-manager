@@ -1,0 +1,42 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="shift-form">
+  <div class="field">
+    <label for="employeeId">Mitarbeiter</label>
+    <p-select
+      id="employeeId"
+      formControlName="employeeId"
+      [options]="employeeOptions()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Mitarbeiter wählen"
+    />
+  </div>
+
+  <div class="field">
+    <label for="type">Schichttyp</label>
+    <p-select id="type" formControlName="type" [options]="shiftTypeOptions" optionLabel="label" optionValue="value" />
+  </div>
+
+  <div class="field">
+    <label for="date">Datum</label>
+    <p-datepicker id="date" formControlName="date" dateFormat="dd.mm.yy" />
+  </div>
+
+  <div class="time-row">
+    <div class="field">
+      <label for="startTime">Start</label>
+      <input id="startTime" type="time" formControlName="startTime" class="time-input" />
+    </div>
+    <div class="field">
+      <label for="endTime">Ende</label>
+      <input id="endTime" type="time" formControlName="endTime" class="time-input" />
+    </div>
+  </div>
+
+  <div class="form-actions">
+    @if (shift()) {
+      <p-button label="Löschen" severity="danger" [text]="true" type="button" (onClick)="delete.emit()" />
+    }
+    <p-button label="Abbrechen" severity="secondary" [text]="true" type="button" (onClick)="cancel.emit()" />
+    <p-button label="Speichern" icon="pi pi-check" type="submit" />
+  </div>
+</form>
