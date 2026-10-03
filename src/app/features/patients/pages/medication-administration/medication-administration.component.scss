@@ -1,0 +1,56 @@
+.administration-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field-row {
+  display: flex;
+  gap: 1rem;
+
+  .field {
+    flex: 1;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  p-select,
+  textarea {
+    width: 100%;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.four-eyes-hint {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--p-orange-300, #fdba74);
+  background: var(--p-orange-50, #fff7ed);
+  border-radius: 6px;
+
+  label {
+    color: var(--p-orange-700, #c2410c);
+  }
+
+  .error {
+    color: var(--p-red-600, #dc2626);
+  }
+}

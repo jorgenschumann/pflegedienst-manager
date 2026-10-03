@@ -74,3 +74,45 @@ textarea {
   font-size: 0.85rem;
   margin: 0.5rem 0;
 }
+
+.medication-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.btm-tag {
+  margin-left: 0.5rem;
+}
+
+.discontinued-hint {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bmp-import-hint {
+  margin: 0;
+  color: var(--p-green-700, #15803d);
+  font-size: 0.85rem;
+}
+
+.renewal-tag {
+  margin-left: 0.5rem;
+}

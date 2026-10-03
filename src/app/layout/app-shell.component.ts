@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { HrStateService } from '../features/hr/services/hr-state.service';
+import { UiScaleService } from './services/ui-scale.service';
 
 interface NavItem {
   label: string;
@@ -18,6 +19,7 @@ interface NavItem {
 })
 export class AppShellComponent {
   private readonly hrState = inject(HrStateService);
+  readonly uiScale = inject(UiScaleService);
 
   readonly navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'pi pi-home', route: '/dashboard' },
@@ -25,7 +27,10 @@ export class AppShellComponent {
     { label: 'Dienstplan', icon: 'pi pi-calendar', route: '/hr/dienstplan' },
     { label: 'Patienten', icon: 'pi pi-heart', route: '/patienten' },
     { label: 'Touren', icon: 'pi pi-map', route: '/touren' },
-    { label: 'Abwesenheiten', icon: 'pi pi-briefcase', route: '/hr/abwesenheiten' }
+    { label: 'Reporting', icon: 'pi pi-chart-bar', route: '/reporting' },
+    { label: 'Abwesenheiten', icon: 'pi pi-briefcase', route: '/hr/abwesenheiten' },
+    { label: 'Abrechnung', icon: 'pi pi-euro', route: '/abrechnung' },
+    { label: 'TI', icon: 'pi pi-shield', route: '/ti' }
   ];
 
   readonly pendingAbsenceCount = this.hrState.pendingAbsenceRequests;

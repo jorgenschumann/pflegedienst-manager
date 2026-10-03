@@ -1,0 +1,70 @@
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.kpi-label {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-bottom: 0.2rem;
+}
+
+.kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.actions {
+  display: flex;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.hint {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.hint.success {
+  color: #15803d;
+}
+
+.detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.rejection {
+  color: #b91c1c;
+}
+
+.detail-total {
+  text-align: right;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.reject-reason {
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+}

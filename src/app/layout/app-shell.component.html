@@ -3,6 +3,26 @@
     <div class="brand">
       <i class="pi pi-heart-fill"></i>
       <span>Pflegedienst Manager</span>
+      <div class="font-scale" title="Schriftgröße anpassen">
+        <button
+          type="button"
+          class="scale-btn"
+          [disabled]="!uiScale.canDecrease()"
+          (click)="uiScale.decrease()"
+          aria-label="Schrift verkleinern"
+        >
+          <i class="pi pi-minus"></i>
+        </button>
+        <button
+          type="button"
+          class="scale-btn"
+          [disabled]="!uiScale.canIncrease()"
+          (click)="uiScale.increase()"
+          aria-label="Schrift vergrößern"
+        >
+          <i class="pi pi-plus"></i>
+        </button>
+      </div>
     </div>
     <nav>
       @for (item of navItems; track item.route) {

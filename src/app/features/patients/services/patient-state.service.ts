@@ -1,5 +1,8 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
+  Medication,
+  MedicationAdministration,
+  MedicationTime,
   Patient,
   Pflegegrad,
   RiskAssessment,
@@ -237,9 +240,106 @@ function generateRiskAssessments(patients: Patient[]): RiskAssessment[] {
   return assessments;
 }
 
+const MEDICATION_CATALOG: {
+  name: string;
+  dosage: string;
+  form: Medication['form'];
+  schedule: MedicationTime[];
+  isBtm?: boolean;
+  instructions?: string;
+}[] = [
+  { name: 'Ramipril 5 mg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'Morgens vor dem Frühstück' },
+  { name: 'Metformin 850 mg', dosage: '1-0-1', form: 'TABLETTE', schedule: ['MORGENS', 'ABENDS'], instructions: 'Zu den Mahlzeiten einnehmen' },
+  { name: 'ASS 100', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'Nach dem Essen' },
+  { name: 'L-Thyroxin 75 µg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'Nüchtern, 30 Min. vor dem Frühstück' },
+  { name: 'Simvastatin 20 mg', dosage: '0-0-1', form: 'TABLETTE', schedule: ['ABENDS'], instructions: 'Abends einnehmen' },
+  { name: 'Pantoprazol 40 mg', dosage: '1-0-0', form: 'KAPSEL', schedule: ['MORGENS'], instructions: 'Vor dem Essen, nicht zerkauen' },
+  { name: 'Torasemid 10 mg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'] },
+  { name: 'Bisoprolol 5 mg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'] },
+  { name: 'Novaminsulfon-Tropfen', dosage: '20 Tropfen', form: 'TROPFEN', schedule: ['BEI_BEDARF'], instructions: 'Bei Bedarf, max. 4x täglich' },
+  { name: 'Macrogol', dosage: '1 Btl.', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'In einem Glas Wasser auflösen' },
+  {
+    name: 'Oxycodon 10 mg',
+    dosage: '1-0-1',
+    form: 'TABLETTE',
+    schedule: ['MORGENS', 'ABENDS'],
+    isBtm: true,
+    instructions: 'Vier-Augen-Prinzip: Gabe durch zweite Fachkraft bestätigen lassen'
+  },
+  { name: 'Marcumar', dosage: 'nach Plan', form: 'TABLETTE', schedule: ['ABENDS'], instructions: 'Gemäß aktuellem Gerinnungs-Ausweis' }
+];
+
+/** Generiert einen plausiblen Medikationsplan (1–4 Medikamente) je aktivem Patienten. */
+function generateMedications(patients: Patient[]): Medication[] {
+  const medications: Medication[] = [];
+
+  for (const patient of patients.filter((p) => p.active)) {
+    const count = 1 + Math.floor(rng() * 4);
+    const usedIndices = new Set<number>();
+    for (let i = 0; i < count; i++) {
+      let idx = Math.floor(rng() * MEDICATION_CATALOG.length);
+      let attempts = 0;
+      while (usedIndices.has(idx) && attempts < MEDICATION_CATALOG.length) {
+        idx = (idx + 1) % MEDICATION_CATALOG.length;
+        attempts++;
+      }
+      usedIndices.add(idx);
+      const entry = MEDICATION_CATALOG[idx];
+
+      medications.push({
+        id: `med-${patient.id}-${i + 1}`,
+        patientId: patient.id,
+        name: entry.name,
+        dosage: entry.dosage,
+        form: entry.form,
+        schedule: entry.schedule,
+        isBtm: !!entry.isBtm,
+        instructions: entry.instructions,
+        startDate: isoYearsAgo(0, -(30 + Math.floor(rng() * 300))),
+        prescribedBy: pick(['Dr. med. Brandt', 'Dr. med. Vogel', 'Dr. med. Lindner', 'Dr. med. Ahrens']),
+        // Vorrat: ca. 10% der Medikamente laufen demnächst (0–10 Tage) aus, Rest 11–45 Tage – für Rezeptmanagement-Demo.
+        supplyUntil: isoOffset(rng() > 0.9 ? Math.floor(rng() * 10) : 11 + Math.floor(rng() * 35)),
+        active: true
+      });
+    }
+  }
+
+  return medications;
+}
+
+/** Erzeugt für die letzten 3 Tage ein Gabenprotokoll je Medikament und planmäßigem Zeitfenster. */
+function generateMedicationAdministrations(medications: Medication[]): MedicationAdministration[] {
+  const administrations: MedicationAdministration[] = [];
+  const confirmers = ['Anna Keller', 'Julia Schröder', 'Laura Hofmann', 'Sophie Meier', 'Markus Weber'];
+
+  for (const med of medications) {
+    for (let dayOffset = -2; dayOffset <= 0; dayOffset++) {
+      const dateIso = isoOffset(dayOffset);
+      for (const time of med.schedule) {
+        if (time === 'BEI_BEDARF') continue; // Bedarfsmedikation wird nicht planmäßig protokolliert
+        if (dayOffset === 0 && rng() > 0.5) continue; // heute teils noch offen/ungegeben
+        const statusRoll = rng();
+        administrations.push({
+          id: `admin-${med.id}-${dateIso}-${time}`,
+          medicationId: med.id,
+          patientId: med.patientId,
+          scheduledTime: time,
+          administeredAt: `${dateIso}T${time === 'MORGENS' ? '08:00' : time === 'MITTAGS' ? '12:30' : time === 'ABENDS' ? '18:30' : '21:30'}:00`,
+          status: statusRoll > 0.92 ? 'VERWEIGERT' : statusRoll > 0.88 ? 'AUSGELASSEN' : 'GEGEBEN',
+          confirmedBy: pick(confirmers)
+        });
+      }
+    }
+  }
+
+  return administrations;
+}
+
 const INITIAL_PATIENTS = generatePatients();
 const INITIAL_SIS_RECORDS = generateSisRecords(INITIAL_PATIENTS);
 const INITIAL_RISK_ASSESSMENTS = generateRiskAssessments(INITIAL_PATIENTS);
+const INITIAL_MEDICATIONS = generateMedications(INITIAL_PATIENTS);
+const INITIAL_MEDICATION_ADMINISTRATIONS = generateMedicationAdministrations(INITIAL_MEDICATIONS);
 
 /**
  * Zentraler Patienten-State-Service (Stammdaten, SIS-Dokumentation, Risikoeinschätzungen).
@@ -251,10 +351,16 @@ export class PatientStateService {
   private readonly _patients = signal<Patient[]>(INITIAL_PATIENTS);
   private readonly _sisRecords = signal<SisRecord[]>(INITIAL_SIS_RECORDS);
   private readonly _riskAssessments = signal<RiskAssessment[]>(INITIAL_RISK_ASSESSMENTS);
+  private readonly _medications = signal<Medication[]>(INITIAL_MEDICATIONS);
+  private readonly _medicationAdministrations = signal<MedicationAdministration[]>(
+    INITIAL_MEDICATION_ADMINISTRATIONS
+  );
 
   readonly patients = this._patients.asReadonly();
   readonly sisRecords = this._sisRecords.asReadonly();
   readonly riskAssessments = this._riskAssessments.asReadonly();
+  readonly medications = this._medications.asReadonly();
+  readonly medicationAdministrations = this._medicationAdministrations.asReadonly();
 
   readonly activePatients = computed(() => this._patients().filter((p) => p.active));
 
@@ -276,6 +382,17 @@ export class PatientStateService {
   readonly highRiskAssessments = computed(() =>
     this._riskAssessments().filter((r) => r.riskLevel === 'HOCH')
   );
+
+  /** Alle Betäubungsmittel-Medikationen aktiver Patienten (erhöhte Dokumentationspflicht). */
+  readonly activeBtmMedications = computed(() =>
+    this._medications().filter((m) => m.active && m.isBtm)
+  );
+
+  /** Aktive Medikamente, deren Vorrat laut Plan innerhalb der nächsten 7 Tage ausläuft (Rezeptmanagement-Erinnerung). */
+  readonly medicationsDueForRenewal = computed(() => {
+    const limit = isoOffset(7);
+    return this._medications().filter((m) => m.active && m.supplyUntil && m.supplyUntil <= limit);
+  });
 
   // ---- Patient CRUD ----
   addPatient(patient: Patient): void {
@@ -316,5 +433,73 @@ export class PatientStateService {
       const exists = list.some((r) => r.id === assessment.id);
       return exists ? list.map((r) => (r.id === assessment.id ? assessment : r)) : [...list, assessment];
     });
+  }
+
+  // ---- Medikation ----
+  getMedications(patientId: string): Medication[] {
+    return this._medications().filter((m) => m.patientId === patientId);
+  }
+
+  getActiveMedications(patientId: string): Medication[] {
+    return this.getMedications(patientId).filter((m) => m.active);
+  }
+
+  addMedication(medication: Medication): void {
+    this._medications.update((list) => [...list, medication]);
+  }
+
+  updateMedication(id: string, changes: Partial<Medication>): void {
+    this._medications.update((list) => list.map((m) => (m.id === id ? { ...m, ...changes } : m)));
+  }
+
+  /** Setzt ein Medikament ab: Markiert es als inaktiv und trägt das Enddatum ein. */
+  discontinueMedication(id: string): void {
+    this.updateMedication(id, { active: false, endDate: new Date().toISOString().slice(0, 10) });
+  }
+
+  /** Prüft, ob der Vorrat eines Medikaments innerhalb von 7 Tagen ausläuft (Rezept-Erinnerung). */
+  isRenewalDue(medication: Medication): boolean {
+    if (!medication.active || !medication.supplyUntil) return false;
+    return medication.supplyUntil <= isoOffset(7);
+  }
+
+  /**
+   * Simuliert das Einlesen des bundeseinheitlichen Medikationsplans (BMP) per QR-Code:
+   * ergänzt den Medikationsplan um 1–2 bislang nicht erfasste Einträge aus dem Katalog.
+   */
+  importFromBmp(patientId: string): number {
+    const existingNames = new Set(this.getMedications(patientId).map((m) => m.name));
+    const candidates = MEDICATION_CATALOG.filter((entry) => !existingNames.has(entry.name));
+    const toImport = candidates.slice(0, 1 + Math.floor(rng() * 2));
+
+    const imported: Medication[] = toImport.map((entry, i) => ({
+      id: `med-${patientId}-bmp-${Date.now()}-${i}`,
+      patientId,
+      name: entry.name,
+      dosage: entry.dosage,
+      form: entry.form,
+      schedule: entry.schedule,
+      isBtm: !!entry.isBtm,
+      instructions: entry.instructions,
+      startDate: isoOffset(0),
+      supplyUntil: isoOffset(30),
+      note: 'Importiert aus dem bundeseinheitlichen Medikationsplan (BMP)',
+      active: true
+    }));
+
+    if (imported.length > 0) {
+      this._medications.update((list) => [...list, ...imported]);
+    }
+    return imported.length;
+  }
+
+  getMedicationAdministrations(patientId: string): MedicationAdministration[] {
+    return this._medicationAdministrations()
+      .filter((a) => a.patientId === patientId)
+      .sort((a, b) => b.administeredAt.localeCompare(a.administeredAt));
+  }
+
+  recordMedicationAdministration(administration: MedicationAdministration): void {
+    this._medicationAdministrations.update((list) => [...list, administration]);
   }
 }

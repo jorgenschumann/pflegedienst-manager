@@ -1,0 +1,138 @@
+<p-toolbar>
+  <ng-template pTemplate="start">
+    <h2>Abrechnung</h2>
+  </ng-template>
+  <ng-template pTemplate="end">
+    <div class="filters">
+      <p-select
+        [options]="statusOptions"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event)"
+        optionLabel="label"
+        optionValue="value"
+      />
+      <p-select
+        [options]="legalBasisOptions"
+        [ngModel]="legalBasisFilter()"
+        (ngModelChange)="legalBasisFilter.set($event)"
+        optionLabel="label"
+        optionValue="value"
+      />
+      <p-button label="Abrechnungen generieren" icon="pi pi-file-plus" (onClick)="openGenerateDialog()" />
+    </div>
+  </ng-template>
+</p-toolbar>
+
+<div class="kpi-grid">
+  <p-card class="kpi-card">
+    <div class="kpi-label">Offene Forderungen</div>
+    <div class="kpi-value">{{ totalOffen() | number: '1.2-2' }} €</div>
+  </p-card>
+  <p-card class="kpi-card">
+    <div class="kpi-label">Bereits bezahlt</div>
+    <div class="kpi-value">{{ totalBezahlt() | number: '1.2-2' }} €</div>
+  </p-card>
+  <p-card class="kpi-card">
+    <div class="kpi-label">Anzahl Abrechnungen</div>
+    <div class="kpi-value">{{ abrechnungen().length }}</div>
+  </p-card>
+</div>
+
+<p-table [value]="rows()" dataKey="abrechnung.id" [scrollable]="true" scrollHeight="calc(100vh - 360px)" class="auto-scroll-table">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Patient</th>
+      <th>Kostenträger</th>
+      <th>Rechtsgrundlage</th>
+      <th>Zeitraum</th>
+      <th>Positionen</th>
+      <th>Betrag</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-row>
+    <tr>
+      <td>{{ row.patientName }}</td>
+      <td>{{ row.abrechnung.kostentraegerName }}</td>
+      <td>{{ legalBasisLabel(row.abrechnung.legalBasis) }}</td>
+      <td>{{ row.abrechnung.periodStart }} – {{ row.abrechnung.periodEnd }}</td>
+      <td>{{ row.abrechnung.positions.length }}</td>
+      <td>{{ row.abrechnung.totalAmount | number: '1.2-2' }} €</td>
+      <td><p-tag [value]="statusLabel(row.abrechnung.status)" [severity]="statusSeverity(row.abrechnung.status)" /></td>
+      <td class="actions">
+        <p-button icon="pi pi-eye" [text]="true" (onClick)="openDetail(row.abrechnung)" pTooltip="Details" />
+        @if (row.abrechnung.status === 'ENTWURF') {
+          <p-button icon="pi pi-check" severity="success" [text]="true" (onClick)="erstellen(row.abrechnung)" pTooltip="Erstellen" />
+        } @else if (row.abrechnung.status === 'ERSTELLT') {
+          <p-button icon="pi pi-send" severity="info" [text]="true" (onClick)="uebermitteln(row.abrechnung)" pTooltip="An Kasse übermitteln" />
+        } @else if (row.abrechnung.status === 'UEBERMITTELT') {
+          <p-button icon="pi pi-euro" severity="success" [text]="true" (onClick)="bezahlt(row.abrechnung)" pTooltip="Als bezahlt markieren" />
+          <p-button icon="pi pi-times" severity="danger" [text]="true" (onClick)="openRejectDialog(row.abrechnung)" pTooltip="Zurückweisen" />
+        }
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="8">Keine Abrechnungen vorhanden. Mit "Abrechnungen generieren" erzeugen.</td></tr>
+  </ng-template>
+</p-table>
+
+<p-dialog [(visible)]="generateDialogVisible" header="Abrechnungen generieren" [modal]="true" [style]="{ width: '26rem' }">
+  <p>Erzeugt für alle im gewählten Monat dokumentierten (erledigten) Besuche Sammelabrechnungen je Patient und Kasse.</p>
+  <p-datepicker [ngModel]="generationMonth()" (ngModelChange)="generationMonth.set($event)" view="month" dateFormat="mm.yy" [showIcon]="true" />
+  <div class="dialog-actions">
+    <p-button label="Generieren" icon="pi pi-file-plus" (onClick)="confirmGenerate()" />
+  </div>
+  @if (lastGeneratedCount() !== null) {
+    @if (lastGeneratedCount()! > 0) {
+      <p class="hint success">{{ lastGeneratedCount() }} neue Abrechnung(en) erstellt.</p>
+    } @else {
+      <p class="hint">Keine neuen abrechenbaren Besuche im gewählten Zeitraum gefunden.</p>
+    }
+  }
+</p-dialog>
+
+<p-dialog [(visible)]="detailDialogVisible" header="Abrechnungsdetails" [modal]="true" [style]="{ width: '40rem' }">
+  @if (selectedAbrechnung(); as a) {
+    <div class="detail-header">
+      <div><strong>Patient:</strong> {{ patientName(a.patientId) }}</div>
+      <div><strong>Kostenträger:</strong> {{ a.kostentraegerName }} ({{ legalBasisLabel(a.legalBasis) }})</div>
+      <div><strong>Zeitraum:</strong> {{ a.periodStart }} – {{ a.periodEnd }}</div>
+      <div><strong>Status:</strong> <p-tag [value]="statusLabel(a.status)" [severity]="statusSeverity(a.status)" /></div>
+      @if (a.rejectionReason) {
+        <div class="rejection"><strong>Ablehnungsgrund:</strong> {{ a.rejectionReason }}</div>
+      }
+    </div>
+    <p-table [value]="a.positions" [scrollable]="true" scrollHeight="16rem" class="auto-scroll-table">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Datum</th>
+          <th>Leistung</th>
+          <th>Betrag</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-pos>
+        <tr>
+          <td>{{ pos.date }}</td>
+          <td>{{ leistungLabel(pos.leistung) }}</td>
+          <td>{{ pos.amount | number: '1.2-2' }} €</td>
+        </tr>
+      </ng-template>
+    </p-table>
+    <div class="detail-total">Gesamt: {{ a.totalAmount | number: '1.2-2' }} €</div>
+  }
+</p-dialog>
+
+<p-dialog [(visible)]="rejectDialogVisible" header="Abrechnung zurückweisen" [modal]="true" [style]="{ width: '26rem' }">
+  <textarea
+    rows="3"
+    class="reject-reason"
+    placeholder="Grund der Zurückweisung (z. B. fehlende Unterlagen)"
+    [ngModel]="rejectReason()"
+    (ngModelChange)="rejectReason.set($event)"
+  ></textarea>
+  <div class="dialog-actions">
+    <p-button label="Zurückweisen" severity="danger" icon="pi pi-times" (onClick)="confirmReject()" />
+  </div>
+</p-dialog>

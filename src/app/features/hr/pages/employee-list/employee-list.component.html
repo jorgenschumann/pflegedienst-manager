@@ -7,7 +7,13 @@
   </ng-template>
 </p-toolbar>
 
-<p-table [value]="employees()" dataKey="id" [paginator]="true" [rows]="10" responsiveLayout="scroll">
+<p-table
+  [value]="employees()"
+  dataKey="id"
+  [scrollable]="true"
+  scrollHeight="calc(100vh - 220px)"
+  class="auto-scroll-table"
+>
   <ng-template pTemplate="header">
     <tr>
       <th>Name</th>

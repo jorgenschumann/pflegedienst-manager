@@ -1,0 +1,124 @@
+<div class="page-header">
+  <h2>Telematikinfrastruktur (TI)</h2>
+  <p-tag value="Simulation / Demo" severity="warn" icon="pi pi-info-circle" />
+</div>
+<p class="sim-hint">
+  Diese Ansicht simuliert die TI-Anbindung (Konnektor, KIM, ePA). Eine echte Anbindung erfordert
+  zertifizierte Konnektor-Hardware und eine SMC-B-Karte der Praxis/des Pflegedienstes.
+</p>
+
+<div class="panels-grid">
+  <p-card header="Konnektor-Status">
+    <div class="kv-row">
+      <span>Status</span>
+      <p-tag [value]="connectorLabel(connector().status)" [severity]="connectorSeverity(connector().status)" />
+    </div>
+    <div class="kv-row">
+      <span>Letzte Synchronisation</span>
+      <span>{{ connector().lastSync | date: 'dd.MM.yyyy HH:mm' }}</span>
+    </div>
+    <div class="kv-row">
+      <span>SMC-B-Zertifikat gültig bis</span>
+      <span>{{ connector().certificateValidUntil | date: 'dd.MM.yyyy' }}</span>
+    </div>
+    <div class="kv-row">
+      <span>Firmware</span>
+      <span>{{ connector().firmwareVersion }}</span>
+    </div>
+    <p-button label="Jetzt synchronisieren" icon="pi pi-sync" [text]="true" (onClick)="sync()" />
+  </p-card>
+
+  <p-card>
+    <ng-template pTemplate="header">
+      <div class="card-header-row">
+        <span>KIM-Postfach</span>
+        @if (unreadKimCount() > 0) {
+          <p-tag [value]="unreadKimCount() + ' ungelesen'" severity="warn" />
+        }
+      </div>
+    </ng-template>
+    <div class="table-scroll">
+      <p-table [value]="kimMessages()" [scrollable]="true" scrollHeight="18rem" class="auto-scroll-table">
+        <ng-template pTemplate="header">
+          <tr>
+            <th></th>
+            <th>Richtung</th>
+            <th>Von / An</th>
+            <th>Betreff</th>
+            <th>Empfangen</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-msg>
+          <tr [class.unread]="!msg.read && msg.direction === 'EINGANG'">
+            <td>
+              @if (!msg.read && msg.direction === 'EINGANG') {
+                <p-button icon="pi pi-envelope" [text]="true" severity="warn" (onClick)="markRead(msg.id)" pTooltip="Als gelesen markieren" />
+              } @else {
+                <i class="pi pi-envelope-open" style="color: #94a3b8"></i>
+              }
+            </td>
+            <td><p-tag [value]="directionLabel(msg.direction)" [severity]="msg.direction === 'EINGANG' ? 'info' : 'secondary'" /></td>
+            <td>{{ msg.direction === 'EINGANG' ? msg.sender : msg.recipient }}</td>
+            <td>{{ msg.subject }}</td>
+            <td>{{ msg.receivedAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="5">Keine KIM-Nachrichten vorhanden.</td></tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </p-card>
+
+  <p-card header="ePA-Zugriffe">
+    <p-select
+      [options]="patientOptions()"
+      [ngModel]="selectedPatientId()"
+      (ngModelChange)="selectedPatientId.set($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Patient wählen"
+      class="patient-select"
+    />
+    @if (selectedConsent(); as consent) {
+      <div class="kv-row consent-row">
+        <span>Einwilligung zum ePA-Zugriff</span>
+        <div class="consent-toggle">
+          <p-toggleswitch [ngModel]="consent.granted" (ngModelChange)="toggleConsent()" />
+          <span>{{ consent.granted ? 'Erteilt' : 'Nicht erteilt' }}</span>
+        </div>
+      </div>
+      @if (consent.granted) {
+        <div class="table-scroll docs">
+          <p-table [value]="selectedDocuments()" [scrollable]="true" scrollHeight="14rem" class="auto-scroll-table">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Kategorie</th>
+                <th>Titel</th>
+                <th>Autor</th>
+                <th>Datum</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-doc>
+              <tr>
+                <td><p-tag [value]="categoryLabel(doc.category)" severity="info" /></td>
+                <td>{{ doc.title }}</td>
+                <td>{{ doc.author }}</td>
+                <td>{{ doc.createdAt | date: 'dd.MM.yyyy' }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr><td colspan="4">Keine ePA-Dokumente vorhanden.</td></tr>
+            </ng-template>
+          </p-table>
+        </div>
+      } @else {
+        <p class="hint">Patient hat den Zugriff auf die ePA (noch) nicht freigegeben.</p>
+      }
+    }
+  </p-card>
+
+  <p-card header="TI-Messenger">
+    <p class="hint">Chatbasierte Kommunikation über TI-Messenger ist für eine spätere Ausbaustufe geplant.</p>
+  </p-card>
+</div>

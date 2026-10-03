@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { TourStateService } from '../../services/tour-state.service';
 import { LEISTUNG_LABELS, LeistungCode, Tour, VisitStatus } from '../../models';
 import { TourEditComponent } from '../tour-edit/tour-edit.component';
+import { VisitDocumentationComponent } from '../visit-documentation/visit-documentation.component';
 
 interface SelectOption<T> {
   label: string;
@@ -34,7 +35,8 @@ type TourStatusFilter = 'ALLE' | Tour['status'];
     InputIconModule,
     SelectModule,
     FormsModule,
-    TourEditComponent
+    TourEditComponent,
+    VisitDocumentationComponent
   ],
   templateUrl: './touren-plan.component.html',
   styleUrl: './touren-plan.component.scss'
@@ -47,6 +49,8 @@ export class TourenPlanComponent {
 
   readonly editingTourId = signal<string | null>(null);
   readonly editDialogVisible = computed(() => this.editingTourId() !== null);
+
+  readonly documentingVisitId = signal<string | null>(null);
 
   readonly searchTerm = signal('');
   readonly employeeFilter = signal<string | null>(null);
@@ -149,6 +153,14 @@ export class TourenPlanComponent {
 
   markVisit(visitId: string, status: VisitStatus): void {
     this.tourState.setVisitStatus(visitId, status);
+  }
+
+  openDocumentation(visitId: string): void {
+    this.documentingVisitId.set(visitId);
+  }
+
+  closeDocumentation(): void {
+    this.documentingVisitId.set(null);
   }
 
   openEdit(tourId: string): void {

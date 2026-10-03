@@ -1,0 +1,142 @@
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.range-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.range-sep {
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.kpi-label {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-bottom: 0.2rem;
+}
+
+.kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.kpi-sub {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-left: 0.3rem;
+}
+
+.kpi-card.success .kpi-value {
+  color: #15803d;
+}
+
+.kpi-card.danger .kpi-value {
+  color: #b91c1c;
+}
+
+.kpi-card.warn .kpi-value {
+  color: #d97706;
+}
+
+.panels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 0.85rem;
+}
+
+.table-scroll {
+  max-height: calc(100vh - 420px);
+  min-height: 140px;
+  overflow-y: auto;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+
+  th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    text-align: left;
+    padding: 0.4rem 0.5rem;
+    color: #475569;
+    font-weight: 600;
+    z-index: 1;
+  }
+
+  td {
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+}
+
+.bar-track {
+  display: inline-block;
+  width: 70px;
+  height: 7px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+}
+
+.bar-fill {
+  height: 100%;
+  background: #15803d;
+  border-radius: 999px;
+}
+
+.bar-value {
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.simple-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.85rem;
+  }
+}
+
+.empty-row {
+  text-align: center;
+  color: #94a3b8;
+  padding: 1rem 0.5rem;
+  font-size: 0.85rem;
+}

@@ -1,0 +1,71 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="administration-form">
+  <div class="field">
+    <label for="medicationId">Medikament</label>
+    <p-select
+      id="medicationId"
+      formControlName="medicationId"
+      [options]="medicationOptions()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Medikament wählen"
+    />
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="scheduledTime">Zeitfenster</label>
+      <p-select
+        id="scheduledTime"
+        formControlName="scheduledTime"
+        [options]="timeOptions"
+        optionLabel="label"
+        optionValue="value"
+      />
+    </div>
+    <div class="field">
+      <label for="status">Status</label>
+      <p-select id="status" formControlName="status" [options]="statusOptions" optionLabel="label" optionValue="value" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="confirmedBy">Durchgeführt von</label>
+    <p-select
+      id="confirmedBy"
+      formControlName="confirmedBy"
+      [options]="employeeOptions()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Mitarbeiter wählen"
+    />
+  </div>
+
+  @if (requiresSecondConfirmation()) {
+    <div class="field four-eyes-hint">
+      <label for="secondConfirmedBy">
+        <i class="pi pi-shield"></i> Zweite Bestätigung (Vier-Augen-Prinzip, BTM-Pflicht)
+      </label>
+      <p-select
+        id="secondConfirmedBy"
+        formControlName="secondConfirmedBy"
+        [options]="secondConfirmerOptions()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Zweite Fachkraft wählen"
+      />
+      @if (form.controls.secondConfirmedBy.invalid && form.controls.secondConfirmedBy.touched) {
+        <small class="error">Bei BTM ist eine zweite Bestätigung erforderlich.</small>
+      }
+    </div>
+  }
+
+  <div class="field">
+    <label for="note">Notiz (optional)</label>
+    <textarea id="note" pTextarea rows="2" formControlName="note" placeholder="z. B. Grund bei Verweigerung…"></textarea>
+  </div>
+
+  <div class="form-actions">
+    <p-button label="Abbrechen" severity="secondary" [text]="true" type="button" (onClick)="cancel.emit()" />
+    <p-button label="Bestätigen" icon="pi pi-check" type="submit" />
+  </div>
+</form>

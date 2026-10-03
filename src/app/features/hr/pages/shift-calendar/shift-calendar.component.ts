@@ -87,12 +87,13 @@ export class ShiftCalendarComponent {
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek,listWeek'
+      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
     },
     buttonText: {
       today: 'Heute',
       month: 'Monat',
       week: 'Woche',
+      day: 'Tag',
       list: 'Liste'
     },
     events: this.events(),

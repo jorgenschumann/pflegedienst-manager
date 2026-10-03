@@ -1,0 +1,169 @@
+<div class="page-header">
+  <h2>Reporting</h2>
+  <div class="range-filter">
+    <p-datepicker
+      [ngModel]="rangeStart()"
+      (ngModelChange)="rangeStart.set($event)"
+      dateFormat="dd.mm.yy"
+      [showIcon]="true"
+    />
+    <span class="range-sep">bis</span>
+    <p-datepicker
+      [ngModel]="rangeEnd()"
+      (ngModelChange)="rangeEnd.set($event)"
+      dateFormat="dd.mm.yy"
+      [showIcon]="true"
+    />
+    <p-button label="Zurücksetzen" [text]="true" icon="pi pi-refresh" (onClick)="resetRange()" />
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <p-card class="kpi-card">
+    <div class="kpi-label">Besuche im Zeitraum</div>
+    <div class="kpi-value">{{ visitTotal() }}</div>
+  </p-card>
+  <p-card class="kpi-card success">
+    <div class="kpi-label">Erledigt</div>
+    <div class="kpi-value">{{ visitErledigt() }}<span class="kpi-sub">({{ visitErledigtPercent() }}%)</span></div>
+  </p-card>
+  <p-card class="kpi-card danger">
+    <div class="kpi-label">Ausgefallen</div>
+    <div class="kpi-value">{{ visitAusgefallen() }}<span class="kpi-sub">({{ visitAusgefallenPercent() }}%)</span></div>
+  </p-card>
+  <p-card class="kpi-card">
+    <div class="kpi-label">Noch geplant</div>
+    <div class="kpi-value">{{ visitOffen() }}<span class="kpi-sub">({{ visitOffenPercent() }}%)</span></div>
+  </p-card>
+  <p-card class="kpi-card">
+    <div class="kpi-label">Schichten im Zeitraum</div>
+    <div class="kpi-value">{{ shiftTotal() }}</div>
+  </p-card>
+  <p-card class="kpi-card warn">
+    <div class="kpi-label">Offene Abwesenheitsanträge</div>
+    <div class="kpi-value">{{ pendingAbsenceRequests().length }}</div>
+  </p-card>
+</div>
+
+<div class="panels-grid">
+  <p-card header="Auslastung &amp; Abschlussquote je Mitarbeiter/-in">
+    <div class="table-scroll">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Mitarbeiter/-in</th>
+            <th>Rolle</th>
+            <th>Touren</th>
+            <th>Besuche</th>
+            <th>Erledigt</th>
+            <th>Ausgefallen</th>
+            <th>Offen</th>
+            <th>Abschlussquote</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of employeeUtilisation(); track row.employeeId) {
+            <tr>
+              <td>{{ row.name }}</td>
+              <td>{{ row.roleLabel }}</td>
+              <td>{{ row.tourCount }}</td>
+              <td>{{ row.total }}</td>
+              <td>{{ row.erledigt }}</td>
+              <td>{{ row.ausgefallen }}</td>
+              <td>{{ row.offen }}</td>
+              <td>
+                <div class="bar-track">
+                  <div class="bar-fill" [style.width.%]="row.completionRate"></div>
+                </div>
+                <span class="bar-value">{{ row.completionRate }}%</span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="empty-row">Keine Touren im gewählten Zeitraum.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </p-card>
+
+  <p-card header="Dienstplan je Rolle">
+    <div class="table-scroll">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Rolle</th>
+            <th>Aktive Mitarbeiter</th>
+            <th>Schichten</th>
+            <th>Bestätigt</th>
+            <th>Entfallen</th>
+            <th>Vertretung</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of roleShiftOverview(); track row.role) {
+            <tr>
+              <td>{{ row.roleLabel }}</td>
+              <td>{{ row.employeeCount }}</td>
+              <td>{{ row.shiftsTotal }}</td>
+              <td>{{ row.bestaetigt }}</td>
+              <td>{{ row.entfallen }}</td>
+              <td>{{ row.vertretung }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-row">Keine Schichten im gewählten Zeitraum.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </p-card>
+
+  <p-card header="Genehmigte Abwesenheitstage im Zeitraum">
+    @if (absencesByType().length) {
+      <ul class="simple-list">
+        @for (row of absencesByType(); track row.type) {
+          <li>
+            <span>{{ row.label }}</span>
+            <strong>{{ row.days }} Tag(e)</strong>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="empty-row">Keine genehmigten Abwesenheiten im gewählten Zeitraum.</p>
+    }
+  </p-card>
+
+  <p-card header="Zuletzt dokumentierte Besuche (Leistungserfassung)">
+    <div class="table-scroll">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Patient/-in</th>
+            <th>Mitarbeiter/-in</th>
+            <th>Status</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of recentlyDocumented(); track row.visitId) {
+            <tr>
+              <td>{{ row.dateIso }}</td>
+              <td>{{ row.patientName }}</td>
+              <td>{{ row.employeeName }}</td>
+              <td><p-tag [value]="row.status" [severity]="visitStatusSeverity(row.status)" /></td>
+              <td>{{ row.detail }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="empty-row">Noch keine dokumentierten Besuche vorhanden.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </p-card>
+</div>

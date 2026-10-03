@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,20 +7,44 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
+import { TableModule } from 'primeng/table';
+import { DialogModule } from 'primeng/dialog';
+import { TooltipModule } from 'primeng/tooltip';
 import { TextareaModule } from 'primeng/textarea';
 import { FormsModule } from '@angular/forms';
 import { PatientStateService } from '../../services/patient-state.service';
 import {
+  MEDICATION_ADMINISTRATION_STATUS_LABELS,
+  MEDICATION_FORM_LABELS,
+  MEDICATION_TIME_LABELS,
+  MedicationAdministrationStatus,
+  MedicationForm,
+  MedicationTime,
   RiskAssessment,
   RISK_ASSESSMENT_LABELS,
   SIS_THEMENFELD_LABELS,
   SisThemenfeldCode
 } from '../../models';
+import { MedicationFormComponent } from '../medication-form/medication-form.component';
+import { MedicationAdministrationComponent } from '../medication-administration/medication-administration.component';
 
 @Component({
   selector: 'app-patient-detail',
   standalone: true,
-  imports: [DatePipe, ButtonModule, CardModule, TabsModule, TagModule, TextareaModule, FormsModule],
+  imports: [
+    DatePipe,
+    ButtonModule,
+    CardModule,
+    TabsModule,
+    TagModule,
+    TableModule,
+    DialogModule,
+    TooltipModule,
+    TextareaModule,
+    FormsModule,
+    MedicationFormComponent,
+    MedicationAdministrationComponent
+  ],
   templateUrl: './patient-detail.component.html',
   styleUrl: './patient-detail.component.scss'
 })
@@ -37,9 +61,38 @@ export class PatientDetailComponent {
   readonly patient = computed(() => this.patientState.getPatient(this.patientId()));
   readonly sisRecord = computed(() => this.patientState.getSisRecord(this.patientId()));
   readonly riskAssessments = computed(() => this.patientState.getRiskAssessments(this.patientId()));
+  readonly medications = computed(() => this.patientState.getMedications(this.patientId()));
+  readonly activeMedications = computed(() => this.medications().filter((m) => m.active));
+  readonly discontinuedMedications = computed(() => this.medications().filter((m) => !m.active));
+  readonly administrations = computed(() => this.patientState.getMedicationAdministrations(this.patientId()));
 
   readonly themenfeldLabels = SIS_THEMENFELD_LABELS;
   readonly riskLabels = RISK_ASSESSMENT_LABELS;
+
+  readonly medicationDialogVisible = signal(false);
+  readonly administrationDialogVisible = signal(false);
+  readonly bmpImportMessage = signal<string | null>(null);
+
+  medicationFormLabel(form: MedicationForm): string {
+    return MEDICATION_FORM_LABELS[form];
+  }
+
+  medicationTimeLabel(time: MedicationTime): string {
+    return MEDICATION_TIME_LABELS[time];
+  }
+
+  administrationStatusLabel(status: MedicationAdministrationStatus): string {
+    return MEDICATION_ADMINISTRATION_STATUS_LABELS[status];
+  }
+
+  private medicationNameById(id: string): string {
+    const med = this.medications().find((m) => m.id === id);
+    return med ? `${med.name} (${med.dosage})` : 'Unbekannt';
+  }
+
+  medicationName(id: string): string {
+    return this.medicationNameById(id);
+  }
 
   pflegegradSeverity(grad: number): 'success' | 'info' | 'warn' | 'danger' {
     if (grad <= 1) return 'success';
@@ -92,6 +145,41 @@ export class PatientDetailComponent {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
     return d.toISOString().slice(0, 10);
+  }
+
+  openNewMedication(): void {
+    this.medicationDialogVisible.set(true);
+  }
+
+  openNewAdministration(): void {
+    this.administrationDialogVisible.set(true);
+  }
+
+  discontinueMedication(id: string): void {
+    this.patientState.discontinueMedication(id);
+  }
+
+  isRenewalDue(medicationId: string): boolean {
+    const med = this.medications().find((m) => m.id === medicationId);
+    return !!med && this.patientState.isRenewalDue(med);
+  }
+
+  importFromBmp(): void {
+    const count = this.patientState.importFromBmp(this.patientId());
+    this.bmpImportMessage.set(
+      count > 0 ? `${count} Medikament(e) aus dem BMP übernommen.` : 'Keine neuen Medikamente im BMP gefunden.'
+    );
+  }
+
+  administrationStatusSeverity(status: MedicationAdministrationStatus): 'success' | 'warn' | 'danger' {
+    switch (status) {
+      case 'GEGEBEN':
+        return 'success';
+      case 'VERWEIGERT':
+        return 'danger';
+      default:
+        return 'warn';
+    }
   }
 
   goBack(): void {

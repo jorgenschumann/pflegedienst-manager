@@ -59,6 +59,9 @@ function isWeekend(date: Date): boolean {
 /** Anzahl Planungstage für die Demo-Tourenplanung: heute + die folgenden 13 Tage. */
 const PLANNING_DAYS = 14;
 
+/** Anzahl vergangener Tage, für die bereits dokumentierte Besuche erzeugt werden (Grundlage für Reporting/Abrechnung). */
+const HISTORY_DAYS = 60;
+
 /** Gruppiert ein Array in gleich große Chunks (letzter Chunk kann kleiner sein). */
 function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -101,7 +104,7 @@ function generateTourData(employees: Employee[], patients: Patient[]): Generated
   today.setHours(0, 0, 0, 0);
   const todayIso = toIsoDate(today);
 
-  for (let dayOffset = 0; dayOffset < PLANNING_DAYS; dayOffset++) {
+  for (let dayOffset = -HISTORY_DAYS; dayOffset < PLANNING_DAYS; dayOffset++) {
     const date = new Date(today);
     date.setDate(date.getDate() + dayOffset);
     const dateIso = toIsoDate(date);
@@ -127,9 +130,18 @@ function generateTourData(employees: Employee[], patients: Patient[]): Generated
         const end = addMinutes(start, duration);
         cursor = addMinutes(end, 12); // 12 Min Fahrzeit zum nächsten Patienten
 
+        const leistungen = pickLeistungen();
         let status: VisitStatus = 'GEPLANT';
+        let performedLeistungen: LeistungCode[] | undefined;
+        let confirmedBy: string | undefined;
+        let confirmedAt: string | undefined;
         if (isPast) {
           status = rng() > 0.93 ? 'AUSGEFALLEN' : 'ERLEDIGT';
+          if (status === 'ERLEDIGT') {
+            performedLeistungen = leistungen;
+            confirmedBy = `${employee.firstName} ${employee.lastName}`;
+            confirmedAt = `${dateIso}T${end}:00`;
+          }
         }
 
         const visitId = `${tourId}-visit-${idx + 1}`;
@@ -140,8 +152,10 @@ function generateTourData(employees: Employee[], patients: Patient[]): Generated
           sequence: idx + 1,
           plannedStart: start,
           plannedEnd: end,
-          leistungen: pickLeistungen(),
-          status
+          leistungen,
+          status,
+          ...(status === 'ERLEDIGT' ? { actualStart: start, actualEnd: end, performedLeistungen, confirmedBy, confirmedAt } : {}),
+          ...(status === 'AUSGEFALLEN' ? { cancelReason: 'Patient nicht angetroffen', confirmedBy: `${employee.firstName} ${employee.lastName}`, confirmedAt: `${dateIso}T${end}:00` } : {})
         });
         visitIds.push(visitId);
       });
@@ -228,6 +242,51 @@ export class TourStateService {
 
   setVisitStatus(visitId: string, status: VisitStatus): void {
     this._visits.update((list) => list.map((v) => (v.id === visitId ? { ...v, status } : v)));
+  }
+
+  /**
+   * Dokumentiert die tatsächliche Durchführung eines Besuchs (Leistungserfassung):
+   * Ist-Zeiten, erbrachte Leistungen, Pflegebericht-Notiz und digitale Bestätigung
+   * durch die durchführende Pflegekraft. Setzt den Status auf "ERLEDIGT".
+   */
+  documentVisit(
+    visitId: string,
+    data: { actualStart: string; actualEnd: string; performedLeistungen: LeistungCode[]; notes?: string; confirmedBy: string }
+  ): void {
+    this._visits.update((list) =>
+      list.map((v) =>
+        v.id === visitId
+          ? {
+              ...v,
+              status: 'ERLEDIGT' as VisitStatus,
+              actualStart: data.actualStart,
+              actualEnd: data.actualEnd,
+              performedLeistungen: data.performedLeistungen,
+              notes: data.notes,
+              confirmedBy: data.confirmedBy,
+              confirmedAt: new Date().toISOString(),
+              cancelReason: undefined
+            }
+          : v
+      )
+    );
+  }
+
+  /** Markiert einen Besuch als ausgefallen und erfasst den Grund. */
+  cancelVisit(visitId: string, reason: string, confirmedBy: string): void {
+    this._visits.update((list) =>
+      list.map((v) =>
+        v.id === visitId
+          ? {
+              ...v,
+              status: 'AUSGEFALLEN' as VisitStatus,
+              cancelReason: reason,
+              confirmedBy,
+              confirmedAt: new Date().toISOString()
+            }
+          : v
+      )
+    );
   }
 
   /** Weist der Tour eine/n andere/n Mitarbeiter/-in zu. */

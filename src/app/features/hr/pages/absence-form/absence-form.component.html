@@ -1,0 +1,39 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="absence-form">
+  <div class="field">
+    <label for="employeeId">Mitarbeiter</label>
+    <p-select
+      id="employeeId"
+      formControlName="employeeId"
+      [options]="employeeOptions()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Mitarbeiter wählen"
+    />
+  </div>
+
+  <div class="field">
+    <label for="type">Art der Abwesenheit</label>
+    <p-select id="type" formControlName="type" [options]="typeOptions" optionLabel="label" optionValue="value" />
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="startDate">Von</label>
+      <p-datepicker id="startDate" formControlName="startDate" dateFormat="dd.mm.yy" [showIcon]="true" />
+    </div>
+    <div class="field">
+      <label for="endDate">Bis</label>
+      <p-datepicker id="endDate" formControlName="endDate" dateFormat="dd.mm.yy" [showIcon]="true" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="note">Notiz (optional)</label>
+    <textarea id="note" pTextarea rows="3" formControlName="note" placeholder="z. B. Reiseziel, Vertretung…"></textarea>
+  </div>
+
+  <div class="form-actions">
+    <p-button label="Abbrechen" severity="secondary" [text]="true" type="button" (onClick)="cancel.emit()" />
+    <p-button label="Beantragen" icon="pi pi-check" type="submit" />
+  </div>
+</form>

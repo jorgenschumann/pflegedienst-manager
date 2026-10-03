@@ -42,7 +42,13 @@
   <span class="result-count">{{ filteredPatients().length }} von {{ patients().length }} Patienten</span>
 </div>
 
-<p-table [value]="filteredPatients()" dataKey="id" [paginator]="true" [rows]="10" responsiveLayout="scroll">
+<p-table
+  [value]="filteredPatients()"
+  dataKey="id"
+  [scrollable]="true"
+  scrollHeight="calc(100vh - 300px)"
+  class="auto-scroll-table"
+>
   <ng-template pTemplate="header">
     <tr>
       <th>Name</th>

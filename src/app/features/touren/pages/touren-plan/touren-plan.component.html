@@ -82,12 +82,25 @@
                     <span class="leistung-chip">{{ leistungLabel(code) }}</span>
                   }
                 </div>
+                @if (visit.status === 'ERLEDIGT' && visit.actualStart) {
+                  <div class="visit-actual">Ist: {{ visit.actualStart }}–{{ visit.actualEnd }}</div>
+                }
+                @if (visit.status === 'AUSGEFALLEN' && visit.cancelReason) {
+                  <div class="visit-cancel-reason">Grund: {{ visit.cancelReason }}</div>
+                }
               </div>
               <div class="visit-status">
                 <p-tag [value]="visit.status" [severity]="visitStatusSeverity(visit.status)" />
                 @if (visit.status === 'GEPLANT') {
-                  <p-button icon="pi pi-check" [text]="true" severity="success" (onClick)="markVisit(visit.id, 'ERLEDIGT')" />
-                  <p-button icon="pi pi-times" [text]="true" severity="danger" (onClick)="markVisit(visit.id, 'AUSGEFALLEN')" />
+                  <p-button
+                    label="Dokumentieren"
+                    icon="pi pi-clipboard"
+                    [text]="true"
+                    size="small"
+                    (onClick)="openDocumentation(visit.id)"
+                  />
+                } @else {
+                  <p-button icon="pi pi-pencil" [text]="true" size="small" (onClick)="openDocumentation(visit.id)" />
                 }
               </div>
             </li>
@@ -107,5 +120,17 @@
 >
   @if (editingTourId(); as id) {
     <app-tour-edit [tourId]="id" (close)="closeEdit()" />
+  }
+</p-dialog>
+
+<p-dialog
+  [visible]="documentingVisitId() !== null"
+  (visibleChange)="!$event && closeDocumentation()"
+  header="Leistungserfassung"
+  [modal]="true"
+  [style]="{ width: '34rem' }"
+>
+  @if (documentingVisitId(); as id) {
+    <app-visit-documentation [visitId]="id" (close)="closeDocumentation()" />
   }
 </p-dialog>

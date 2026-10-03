@@ -3,8 +3,8 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 
   h2 {
     margin: 0;
@@ -14,15 +14,15 @@
 .date-nav {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
 
   .search-field {
     flex: 1 1 18rem;
@@ -32,32 +32,33 @@
   .result-count {
     margin-left: auto;
     color: var(--p-text-muted-color, #64748b);
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     white-space: nowrap;
   }
 }
 
 .tour-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0.75rem;
 }
 
 .tour-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1rem 0;
+  padding: 0.65rem 0.65rem 0;
 
   .tour-name {
     font-weight: 600;
+    font-size: 0.95rem;
   }
 }
 
 .tour-header-actions {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .visit-list {
@@ -66,15 +67,15 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .visit-item {
   display: grid;
-  grid-template-columns: 90px 1fr auto;
-  gap: 0.75rem;
+  grid-template-columns: 80px 1fr auto;
+  gap: 0.6rem;
   align-items: start;
-  padding-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid #e2e8f0;
 
   &:last-child {
@@ -85,32 +86,45 @@
 
 .visit-time {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #334155;
 }
 
 .visit-patient {
   font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .visit-address {
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 
 .visit-leistungen {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.35rem;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
 }
 
 .leistung-chip {
   background: #f1f5f9;
   color: #334155;
   border-radius: 999px;
-  padding: 0.15rem 0.6rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+.visit-actual {
+  margin-top: 0.25rem;
   font-size: 0.75rem;
+  color: #15803d;
+}
+
+.visit-cancel-reason {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #b91c1c;
 }
 
 .visit-status {

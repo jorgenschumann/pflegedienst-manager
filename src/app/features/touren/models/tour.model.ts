@@ -32,6 +32,17 @@ export interface Visit {
   leistungen: LeistungCode[];
   status: VisitStatus;
   notes?: string;
+  /** Tatsächliche Durchführungszeiten (Leistungserfassung), erfasst nach dem Besuch. */
+  actualStart?: string; // HH:mm
+  actualEnd?: string; // HH:mm
+  /** Tatsächlich erbrachte Leistungen, können von den geplanten abweichen. */
+  performedLeistungen?: LeistungCode[];
+  /** Begründung bei einem ausgefallenen Besuch. */
+  cancelReason?: string;
+  /** Name der dokumentierenden Pflegekraft (digitale Bestätigung anstelle einer Unterschrift). */
+  confirmedBy?: string;
+  /** Zeitpunkt der Dokumentation (ISO-Datetime). */
+  confirmedAt?: string;
 }
 
 export type TourStatus = 'GEPLANT' | 'IN_ARBEIT' | 'ABGESCHLOSSEN';

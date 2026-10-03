@@ -13,6 +13,7 @@
       <p-tab value="stammdaten">Stammdaten</p-tab>
       <p-tab value="sis">SIS-Dokumentation</p-tab>
       <p-tab value="risiken">Risikoeinschätzungen</p-tab>
+      <p-tab value="medikation">Medikation</p-tab>
     </p-tablist>
     <p-tabpanels>
       <p-tabpanel value="stammdaten">
@@ -116,8 +117,141 @@
           }
         </div>
       </p-tabpanel>
+
+      <p-tabpanel value="medikation">
+        <div class="medication-section">
+          <div class="section-header">
+            <h3>Medikationsplan</h3>
+            <div class="header-actions">
+              <p-button label="Per BMP importieren" icon="pi pi-qrcode" severity="secondary" [outlined]="true" (onClick)="importFromBmp()" pTooltip="Simuliert das Einlesen des bundeseinheitlichen Medikationsplans per QR-Code" />
+              <p-button label="Neues Medikament" icon="pi pi-plus" (onClick)="openNewMedication()" />
+            </div>
+          </div>
+
+          @if (bmpImportMessage(); as msg) {
+            <p class="bmp-import-hint">{{ msg }}</p>
+          }
+
+          <p-table
+            [value]="activeMedications()"
+            dataKey="id"
+            [scrollable]="true"
+            scrollHeight="calc(100vh - 480px)"
+            class="auto-scroll-table"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Medikament</th>
+                <th>Dosierung</th>
+                <th>Form</th>
+                <th>Zeiten</th>
+                <th>Hinweis</th>
+                <th>Verordnet von</th>
+                <th>Seit</th>
+                <th>Vorrat bis</th>
+                <th></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-med>
+              <tr>
+                <td>
+                  {{ med.name }}
+                  @if (med.isBtm) {
+                    <p-tag value="BTM" severity="danger" class="btm-tag" pTooltip="Betäubungsmittel – Vier-Augen-Prinzip bei Gabe erforderlich" />
+                  }
+                </td>
+                <td>{{ med.dosage }}</td>
+                <td>{{ medicationFormLabel(med.form) }}</td>
+                <td>
+                  @for (t of med.schedule; track t) {
+                    <p-tag [value]="medicationTimeLabel(t)" severity="info" />
+                  }
+                </td>
+                <td>{{ med.instructions || '–' }}</td>
+                <td>{{ med.prescribedBy || '–' }}</td>
+                <td>{{ med.startDate | date: 'dd.MM.yyyy' }}</td>
+                <td>
+                  @if (med.supplyUntil) {
+                    {{ med.supplyUntil | date: 'dd.MM.yyyy' }}
+                    @if (isRenewalDue(med.id)) {
+                      <p-tag value="Rezept bald fällig" severity="warn" class="renewal-tag" />
+                    }
+                  } @else {
+                    –
+                  }
+                </td>
+                <td>
+                  <p-button icon="pi pi-ban" severity="secondary" [text]="true" (onClick)="discontinueMedication(med.id)" pTooltip="Absetzen" />
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr><td colspan="9">Keine aktiven Medikamente vorhanden.</td></tr>
+            </ng-template>
+          </p-table>
+
+          @if (discontinuedMedications().length > 0) {
+            <p class="discontinued-hint">{{ discontinuedMedications().length }} abgesetzte/s Medikament(e) ausgeblendet.</p>
+          }
+
+          <div class="section-header">
+            <h3>Gabenprotokoll</h3>
+            <p-button label="Gabe erfassen" icon="pi pi-plus" (onClick)="openNewAdministration()" />
+          </div>
+
+          <p-table
+            [value]="administrations()"
+            dataKey="id"
+            [scrollable]="true"
+            scrollHeight="calc(100vh - 480px)"
+            class="auto-scroll-table"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Zeitpunkt</th>
+                <th>Medikament</th>
+                <th>Zeitfenster</th>
+                <th>Status</th>
+                <th>Durchgeführt von</th>
+                <th>2. Bestätigung</th>
+                <th>Notiz</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-admin>
+              <tr>
+                <td>{{ admin.administeredAt | date: 'dd.MM.yyyy, HH:mm' }}</td>
+                <td>{{ medicationName(admin.medicationId) }}</td>
+                <td>{{ medicationTimeLabel(admin.scheduledTime) }}</td>
+                <td><p-tag [value]="administrationStatusLabel(admin.status)" [severity]="administrationStatusSeverity(admin.status)" /></td>
+                <td>{{ admin.confirmedBy }}</td>
+                <td>{{ admin.secondConfirmedBy || '–' }}</td>
+                <td>{{ admin.note || '–' }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr><td colspan="7">Noch keine Gaben protokolliert.</td></tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-tabpanel>
     </p-tabpanels>
   </p-tabs>
+
+  <p-dialog [(visible)]="medicationDialogVisible" header="Neues Medikament" [modal]="true" [style]="{ width: '36rem' }">
+    <app-medication-form
+      [patientId]="p.id"
+      (save)="medicationDialogVisible.set(false)"
+      (cancel)="medicationDialogVisible.set(false)"
+    />
+  </p-dialog>
+
+  <p-dialog [(visible)]="administrationDialogVisible" header="Gabe erfassen" [modal]="true" [style]="{ width: '32rem' }">
+    <app-medication-administration
+      [patientId]="p.id"
+      (save)="administrationDialogVisible.set(false)"
+      (cancel)="administrationDialogVisible.set(false)"
+    />
+  </p-dialog>
 } @else {
   <p>Patient nicht gefunden.</p>
 }

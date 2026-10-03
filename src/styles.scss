@@ -5,8 +5,24 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: 15px;
+}
+
 html, body {
   height: 100%;
   margin: 0;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+body {
+  font-size: inherit;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 1.25rem;
 }

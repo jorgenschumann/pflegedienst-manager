@@ -1,0 +1,66 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="medication-form">
+  <div class="field">
+    <label for="name">Medikament</label>
+    <input id="name" type="text" pInputText formControlName="name" placeholder="z. B. Ramipril 5 mg" />
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="dosage">Dosierung</label>
+      <input id="dosage" type="text" pInputText formControlName="dosage" placeholder="z. B. 1-0-1" />
+    </div>
+    <div class="field">
+      <label for="form">Darreichungsform</label>
+      <p-select id="form" formControlName="form" [options]="formOptions" optionLabel="label" optionValue="value" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="schedule">Einnahmezeiten</label>
+    <p-multiselect
+      id="schedule"
+      formControlName="schedule"
+      [options]="timeOptions"
+      optionLabel="label"
+      optionValue="value"
+      display="chip"
+      placeholder="Zeitfenster wählen"
+    />
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="startDate">Beginn</label>
+      <p-datepicker id="startDate" formControlName="startDate" dateFormat="dd.mm.yy" [showIcon]="true" />
+    </div>
+    <div class="field">
+      <label for="prescribedBy">Verordnet von</label>
+      <input id="prescribedBy" type="text" pInputText formControlName="prescribedBy" placeholder="z. B. Dr. med. Brandt" />
+    </div>
+  </div>
+
+  <div class="field checkbox-field">
+    <p-checkbox formControlName="isBtm" [binary]="true" inputId="isBtm" />
+    <label for="isBtm">Betäubungsmittel (BTM) – erfordert lückenlose Gabendokumentation &amp; Vier-Augen-Prinzip</label>
+  </div>
+
+  <div class="field">
+    <label for="instructions">Einnahmehinweis</label>
+    <input id="instructions" type="text" pInputText formControlName="instructions" placeholder="z. B. vor dem Essen, nicht zerkauen" />
+  </div>
+
+  <div class="field">
+    <label for="supplyUntil">Vorrat reicht bis (für Rezept-Erinnerung)</label>
+    <p-datepicker id="supplyUntil" formControlName="supplyUntil" dateFormat="dd.mm.yy" [showIcon]="true" />
+  </div>
+
+  <div class="field">
+    <label for="note">Notiz (optional)</label>
+    <textarea id="note" pTextarea rows="2" formControlName="note" placeholder="Besonderheiten, Hinweise…"></textarea>
+  </div>
+
+  <div class="form-actions">
+    <p-button label="Abbrechen" severity="secondary" [text]="true" type="button" (onClick)="cancel.emit()" />
+    <p-button label="Speichern" icon="pi pi-check" type="submit" />
+  </div>
+</form>

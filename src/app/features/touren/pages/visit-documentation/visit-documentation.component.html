@@ -1,0 +1,110 @@
+@if (visit(); as v) {
+  <div class="doc-header">
+    <div>
+      <div class="patient-name">{{ patientName() }}</div>
+      <div class="planned-time">Geplant: {{ v.plannedStart }}–{{ v.plannedEnd }}</div>
+    </div>
+    <div class="mode-switch">
+      <p-button
+        label="Erledigt"
+        icon="pi pi-check"
+        [severity]="mode() === 'ERLEDIGT' ? 'success' : 'secondary'"
+        [text]="mode() !== 'ERLEDIGT'"
+        (onClick)="setMode('ERLEDIGT')"
+      />
+      <p-button
+        label="Ausgefallen"
+        icon="pi pi-times"
+        [severity]="mode() === 'AUSGEFALLEN' ? 'danger' : 'secondary'"
+        [text]="mode() !== 'AUSGEFALLEN'"
+        (onClick)="setMode('AUSGEFALLEN')"
+      />
+    </div>
+  </div>
+
+  @if (alreadyDocumented()) {
+    <p class="already-note">
+      Bereits dokumentiert von <strong>{{ v.confirmedBy }}</strong>
+      @if (v.confirmedAt) {
+        am {{ v.confirmedAt | date: 'dd.MM.yyyy, HH:mm' }} Uhr
+      }
+    </p>
+  }
+
+  @if (mode() === 'ERLEDIGT') {
+    <div class="form-grid">
+      <div class="field">
+        <label for="actualStart">Ist-Beginn</label>
+        <input id="actualStart" type="time" [ngModel]="actualStart()" (ngModelChange)="actualStart.set($event)" class="time-input" />
+      </div>
+      <div class="field">
+        <label for="actualEnd">Ist-Ende</label>
+        <input id="actualEnd" type="time" [ngModel]="actualEnd()" (ngModelChange)="actualEnd.set($event)" class="time-input" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Tatsächlich erbrachte Leistungen</label>
+      <p-multiselect
+        [ngModel]="performedLeistungen()"
+        (ngModelChange)="performedLeistungen.set($event)"
+        [options]="leistungOptions"
+        optionLabel="label"
+        optionValue="value"
+        display="chip"
+        placeholder="Leistungen auswählen"
+        [style]="{ width: '100%' }"
+      />
+    </div>
+
+    <div class="field">
+      <label for="notes">Pflegebericht / Hinweise</label>
+      <textarea
+        id="notes"
+        pTextarea
+        rows="3"
+        [ngModel]="notes()"
+        (ngModelChange)="notes.set($event)"
+        placeholder="Beobachtungen, Besonderheiten…"
+      ></textarea>
+    </div>
+
+    <p class="confirm-note">
+      <i class="pi pi-shield"></i>
+      Bestätigung durch <strong>{{ confirmedByName() }}</strong> beim Speichern (digitale Signatur).
+    </p>
+
+    <div class="actions">
+      <p-button label="Abbrechen" [text]="true" (onClick)="close.emit()" />
+      <p-button label="Als erledigt bestätigen" icon="pi pi-check" severity="success" (onClick)="confirmErledigt()" />
+    </div>
+  } @else {
+    <div class="field">
+      <label for="cancelReason">Grund für den Ausfall</label>
+      <textarea
+        id="cancelReason"
+        pTextarea
+        rows="3"
+        [ngModel]="cancelReason()"
+        (ngModelChange)="cancelReason.set($event)"
+        placeholder="z. B. Patient im Krankenhaus, nicht angetroffen, Terminabsage…"
+      ></textarea>
+    </div>
+
+    <p class="confirm-note">
+      <i class="pi pi-shield"></i>
+      Bestätigung durch <strong>{{ confirmedByName() }}</strong> beim Speichern (digitale Signatur).
+    </p>
+
+    <div class="actions">
+      <p-button label="Abbrechen" [text]="true" (onClick)="close.emit()" />
+      <p-button
+        label="Als ausgefallen markieren"
+        icon="pi pi-times"
+        severity="danger"
+        [disabled]="!cancelReason().trim()"
+        (onClick)="confirmAusgefallen()"
+      />
+    </div>
+  }
+}

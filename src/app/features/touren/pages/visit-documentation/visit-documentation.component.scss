@@ -1,0 +1,79 @@
+.doc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.patient-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.planned-time {
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+}
+
+.mode-switch {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.already-note {
+  margin: 0 0 0.75rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--p-surface-100);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--p-text-muted-color);
+  }
+
+  textarea {
+    width: 100%;
+    resize: vertical;
+    font-family: inherit;
+  }
+}
+
+.time-input {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--p-surface-300);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.confirm-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+  margin: 0.5rem 0 1rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
