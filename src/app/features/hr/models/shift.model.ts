@@ -23,3 +23,11 @@ export interface ShiftTemplate {
   startTime: string;
   endTime: string;
 }
+
+/** Wunschfrei-Eintrag: Mitarbeiterwunsch auf Dienstfreistellung an einem bestimmten Tag. */
+export interface ShiftPreference {
+  id: string;
+  employeeId: string;
+  date: string; // ISO-Datum
+  note?: string;
+}

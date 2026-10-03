@@ -26,3 +26,18 @@ export interface ServiceQualificationRequirement {
   serviceLabel: string;
   requiredQualifications: QualificationCode[];
 }
+
+/** Anzeige-Label je Qualifikationscode, für Spaltentitel der Qualifikationsmatrix. */
+export const QUALIFICATION_LABELS: Record<QualificationCode, string> = {
+  EXAMINIERTE_PFLEGEFACHKRAFT: 'Examinierte Pflegefachkraft',
+  PFLEGEHELFER_1_JAHR: '1-jährige Pflegehilfskraft',
+  PFLEGEHELFER_BASISKURS: 'Basiskurs-Pflegehelfer',
+  BEHANDLUNGSPFLEGE_LG1: 'Behandlungspflege LG1',
+  BEHANDLUNGSPFLEGE_LG2: 'Behandlungspflege LG2',
+  WUNDMANAGER: 'Wundmanager',
+  PRAXISANLEITER: 'Praxisanleiter/-in',
+  FAHRERLAUBNIS_PKW: 'Fahrerlaubnis PKW',
+  BETREUUNGSKRAFT_43B: 'Betreuungskraft § 43b'
+};
+
+export const ALL_QUALIFICATION_CODES: QualificationCode[] = Object.keys(QUALIFICATION_LABELS) as QualificationCode[];

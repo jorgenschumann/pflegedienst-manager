@@ -17,6 +17,23 @@ export const routes: Routes = [
       import('./features/hr/pages/shift-calendar/shift-calendar.component').then((m) => m.ShiftCalendarComponent)
   },
   {
+    path: 'hr/qualifikationen',
+    loadComponent: () =>
+      import('./features/hr/pages/qualifikationsmatrix/qualifikationsmatrix.component').then(
+        (m) => m.QualifikationsmatrixComponent
+      )
+  },
+  {
+    path: 'hr/stundenkonto',
+    loadComponent: () =>
+      import('./features/hr/pages/stundenkonto/stundenkonto.component').then((m) => m.StundenkontoComponent)
+  },
+  {
+    path: 'hr/regelpruefung',
+    loadComponent: () =>
+      import('./features/hr/pages/regelpruefung/regelpruefung.component').then((m) => m.RegelpruefungComponent)
+  },
+  {
     path: 'hr/abwesenheiten',
     loadComponent: () =>
       import('./features/hr/pages/absence-list/absence-list.component').then((m) => m.AbsenceListComponent)

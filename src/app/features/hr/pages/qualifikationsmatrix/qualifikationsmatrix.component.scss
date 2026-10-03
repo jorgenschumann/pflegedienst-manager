@@ -1,0 +1,49 @@
+.subtitle {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.summary-title {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.summary-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0.25rem 0;
+
+  &.negative {
+    color: #b91c1c;
+  }
+}
+
+.summary-detail {
+  font-size: 0.8rem;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.qual-col {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.has-qual {
+  color: #15803d;
+}
+
+.no-qual {
+  color: #cbd5e1;
+}

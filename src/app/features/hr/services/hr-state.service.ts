@@ -1,5 +1,23 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { Absence, Employee, EmploymentType, Qualification, QualificationCode, Shift, ShiftType } from '../models';
+import { Absence, Employee, EmploymentType, Qualification, QualificationCode, Shift, ShiftPreference, ShiftType } from '../models';
+
+/** Regelverstoß im Dienstplan (Ruhezeit oder Wunschfrei), für die Regelprüfungs-Seite. */
+export interface PlanViolation {
+  id: string;
+  type: 'RUHEZEIT' | 'WUNSCHFREI';
+  employeeId: string;
+  shift: Shift;
+  detail: string;
+}
+
+/** Soll-Ist-Zeile für den Stundenabgleich eines Mitarbeiters im gewählten Zeitraum. */
+export interface TimeAccountRow {
+  employee: Employee;
+  sollHours: number;
+  istHours: number;
+  diffHours: number;
+  balanceHours: number;
+}
 
 /** Demo-Qualifikationen für In-Memory-Seed-Daten. */
 const Q = (code: QualificationCode, label: string): Qualification => ({ code, label });
@@ -322,6 +340,45 @@ const INITIAL_ABSENCES: Absence[] = [
   }
 ];
 
+/** Sucht das nächste geplante Datum eines Mitarbeiters innerhalb eines Zeitfensters (für Demo-Seeddaten). */
+function findUpcomingShiftDate(shifts: Shift[], employeeId: string, minDaysAhead: number, maxDaysAhead: number): string {
+  const start = iso(minDaysAhead);
+  const end = iso(maxDaysAhead);
+  const match = shifts.find(
+    (s) => s.employeeId === employeeId && s.status !== 'ENTFALLEN' && s.date >= start && s.date <= end
+  );
+  return match?.date ?? iso(minDaysAhead);
+}
+
+const INITIAL_SHIFT_PREFERENCES: ShiftPreference[] = [
+  {
+    id: 'pref-1',
+    employeeId: 'emp-2',
+    date: findUpcomingShiftDate(INITIAL_SHIFTS, 'emp-2', 1, 6),
+    note: 'Familienfeier'
+  }
+];
+
+/** Dauer einer Schicht in Stunden; berücksichtigt Nachtschichten, die über Mitternacht gehen. */
+function shiftDurationHours(shift: Shift): number {
+  const [startH, startM] = shift.startTime.split(':').map(Number);
+  const [endH, endM] = shift.endTime.split(':').map(Number);
+  let minutes = endH * 60 + endM - (startH * 60 + startM);
+  if (minutes <= 0) minutes += 24 * 60;
+  return Math.round((minutes / 60) * 100) / 100;
+}
+
+/** Start-/Endzeitpunkt einer Schicht als `Date`, für die Ruhezeitprüfung zwischen zwei Diensten. */
+function shiftStartDateTime(shift: Shift): Date {
+  return new Date(`${shift.date}T${shift.startTime}:00`);
+}
+function shiftEndDateTime(shift: Shift): Date {
+  const start = shiftStartDateTime(shift);
+  const end = new Date(`${shift.date}T${shift.endTime}:00`);
+  if (end <= start) end.setDate(end.getDate() + 1);
+  return end;
+}
+
 /**
  * Zentraler HR-State-Service (Mitarbeiter, Dienstplan, Abwesenheiten).
  * Verwendet Angular Signals als Single Source of Truth; aktuell mit
@@ -332,10 +389,12 @@ export class HrStateService {
   private readonly _employees = signal<Employee[]>(INITIAL_EMPLOYEES);
   private readonly _shifts = signal<Shift[]>(INITIAL_SHIFTS);
   private readonly _absences = signal<Absence[]>(INITIAL_ABSENCES);
+  private readonly _shiftPreferences = signal<ShiftPreference[]>(INITIAL_SHIFT_PREFERENCES);
 
   readonly employees = this._employees.asReadonly();
   readonly shifts = this._shifts.asReadonly();
   readonly absences = this._absences.asReadonly();
+  readonly shiftPreferences = this._shiftPreferences.asReadonly();
 
   readonly activeEmployees = computed(() => this._employees().filter((e) => e.active));
 
@@ -352,6 +411,29 @@ export class HrStateService {
   readonly totalTimeAccountBalance = computed(() =>
     this.activeEmployees().reduce((sum, e) => sum + e.contract.timeAccountBalanceHours, 0)
   );
+
+  /**
+   * Fachkraftquote gemäß § 71 SGB XI (vereinfachte Demo-Kennzahl): Anteil examinierter
+   * Pflegefachkräfte an allen aktiven Pflegekräften (Pflegefachkraft + Pflegehelfer).
+   * Ambulante Pflegedienste müssen i. d. R. eine Fachkraftquote von mindestens 50 % nachweisen.
+   */
+  readonly fachkraftquote = computed(() => {
+    const pflegekraefte = this.activeEmployees().filter((e) => e.role === 'PFLEGEFACHKRAFT' || e.role === 'PFLEGEHELFER');
+    const examiniert = pflegekraefte.filter((e) => e.qualifications.some((q) => q.code === 'EXAMINIERTE_PFLEGEFACHKRAFT'));
+    const quote = pflegekraefte.length > 0 ? examiniert.length / pflegekraefte.length : 0;
+    return {
+      examiniertCount: examiniert.length,
+      gesamtCount: pflegekraefte.length,
+      quote,
+      erfuellt: quote >= 0.5
+    };
+  });
+
+  /** Kombinierte Regelverstöße (Ruhezeit + Wunschfrei) der kommenden 14 Tage, für die Regelprüfungs-Seite. */
+  readonly planViolations = computed<PlanViolation[]>(() => [
+    ...this.restPeriodViolations(),
+    ...this.wunschfreiViolations()
+  ]);
 
   // ---- Employee CRUD ----
   addEmployee(employee: Employee): void {
@@ -402,5 +484,158 @@ export class HrStateService {
     this._absences.update((list) =>
       list.map((a) => (a.id === id ? { ...a, status: 'STORNIERT' as const } : a))
     );
+  }
+
+  /**
+   * Prüft für die kommenden `daysAhead` Tage, ob an jedem Diensttag mindestens eine examinierte
+   * Pflegefachkraft im Dienst eingeteilt ist (verantwortliche Fachkraft, § 71 SGB XI).
+   * Liefert die Daten, an denen keine Abdeckung besteht.
+   */
+  daysWithoutFachkraftCoverage(daysAhead = 14): string[] {
+    const shiftsByDate = new Map<string, Shift[]>();
+    for (const s of this._shifts()) {
+      if (s.status === 'ENTFALLEN') continue;
+      if (!shiftsByDate.has(s.date)) shiftsByDate.set(s.date, []);
+      shiftsByDate.get(s.date)!.push(s);
+    }
+    const employeesById = new Map(this._employees().map((e) => [e.id, e]));
+    const missing: string[] = [];
+    for (let i = 0; i < daysAhead; i++) {
+      const dateIso = iso(i);
+      const dayShifts = shiftsByDate.get(dateIso) ?? [];
+      if (dayShifts.length === 0) continue;
+      const hasFachkraft = dayShifts.some((s) =>
+        employeesById.get(s.employeeId)?.qualifications.some((q) => q.code === 'EXAMINIERTE_PFLEGEFACHKRAFT')
+      );
+      if (!hasFachkraft) missing.push(dateIso);
+    }
+    return missing;
+  }
+
+  /**
+   * Soll-Ist-Stundenabgleich je aktivem Mitarbeiter für den angegebenen Zeitraum. Soll-Stunden
+   * werden aus der vertraglichen Wochenarbeitszeit auf die Anzahl der Tage im Zeitraum
+   * hochgerechnet, Ist-Stunden aus den tatsächlich geplanten/bestätigten Schichten summiert.
+   */
+  timeAccountSummary(periodStart: string, periodEnd: string): TimeAccountRow[] {
+    const shiftsInPeriod = this._shifts().filter(
+      (s) => s.date >= periodStart && s.date <= periodEnd && s.status !== 'ENTFALLEN'
+    );
+    const dayCount = Math.round((new Date(periodEnd).getTime() - new Date(periodStart).getTime()) / 86400000) + 1;
+
+    // Nur Rollen berücksichtigen, die im Dienstplan eingeteilt werden (Verwaltung/Teamleitung
+    // haben kein Schichtmodell in diesem Demo-Datenbestand und würden sonst fälschlich als
+    // durchgehend unbesetzt erscheinen).
+    const shiftBasedRoles = new Set<Employee['role']>(['PFLEGEFACHKRAFT', 'PFLEGEHELFER', 'ERGAENZENDE_HILFE']);
+
+    return this.activeEmployees()
+      .filter((e) => shiftBasedRoles.has(e.role))
+      .map((employee) => {
+        const istHours = shiftsInPeriod
+          .filter((s) => s.employeeId === employee.id)
+          .reduce((sum, s) => sum + shiftDurationHours(s), 0);
+        const sollHours = Math.round((employee.contract.weeklyTargetHours / 7) * dayCount * 10) / 10;
+        const diffHours = Math.round((istHours - sollHours) * 10) / 10;
+        return {
+          employee,
+          sollHours,
+          istHours: Math.round(istHours * 10) / 10,
+          diffHours,
+          balanceHours: Math.round((employee.contract.timeAccountBalanceHours + diffHours) * 10) / 10
+        };
+      });
+  }
+
+  // ---- Wunschfrei CRUD ----
+  requestTimeOff(preference: ShiftPreference): void {
+    this._shiftPreferences.update((list) => [...list, preference]);
+  }
+
+  removeTimeOffRequest(id: string): void {
+    this._shiftPreferences.update((list) => list.filter((p) => p.id !== id));
+  }
+
+  /**
+   * Ruhezeit-Verstöße (< 11 Std. zwischen Schichtende und nächstem Schichtbeginn, § 5 ArbZG)
+   * für die kommenden `daysAhead` Tage.
+   */
+  restPeriodViolations(daysAhead = 14): PlanViolation[] {
+    const horizonEnd = iso(daysAhead);
+    const byEmployee = new Map<string, Shift[]>();
+    for (const s of this._shifts()) {
+      if (s.status === 'ENTFALLEN' || s.date > horizonEnd) continue;
+      if (!byEmployee.has(s.employeeId)) byEmployee.set(s.employeeId, []);
+      byEmployee.get(s.employeeId)!.push(s);
+    }
+
+    const violations: PlanViolation[] = [];
+    byEmployee.forEach((shifts, employeeId) => {
+      const sorted = [...shifts].sort((a, b) => shiftStartDateTime(a).getTime() - shiftStartDateTime(b).getTime());
+      for (let i = 1; i < sorted.length; i++) {
+        const prevEnd = shiftEndDateTime(sorted[i - 1]);
+        const currStart = shiftStartDateTime(sorted[i]);
+        const gapHours = (currStart.getTime() - prevEnd.getTime()) / 3600000;
+        if (gapHours >= 0 && gapHours < 11) {
+          violations.push({
+            id: `rz-${sorted[i].id}`,
+            type: 'RUHEZEIT',
+            employeeId,
+            shift: sorted[i],
+            detail: `Nur ${gapHours.toFixed(1)} Std. Ruhezeit vor dieser Schicht (mind. 11 Std. erforderlich).`
+          });
+        }
+      }
+    });
+    return violations;
+  }
+
+  /** Dienste, die auf einen genehmigten Wunschfrei-Tag des eingeteilten Mitarbeiters fallen. */
+  wunschfreiViolations(daysAhead = 14): PlanViolation[] {
+    const horizonEnd = iso(daysAhead);
+    const prefsByKey = new Set(this._shiftPreferences().map((p) => `${p.employeeId}|${p.date}`));
+    return this._shifts()
+      .filter((s) => s.status !== 'ENTFALLEN' && s.date <= horizonEnd && prefsByKey.has(`${s.employeeId}|${s.date}`))
+      .map((s) => ({
+        id: `wf-${s.id}`,
+        type: 'WUNSCHFREI' as const,
+        employeeId: s.employeeId,
+        shift: s,
+        detail: 'Dienst überschneidet sich mit genehmigtem Wunschfrei-Tag.'
+      }));
+  }
+
+  /**
+   * Schlägt eine Ersatzkraft für eine regelwidrige Schicht vor: gleiche Rolle, aktiv, an dem Tag
+   * noch nicht eingeteilt und ohne Wunschfrei-Konflikt an diesem Tag.
+   */
+  suggestShiftSwap(shiftId: string): Employee | undefined {
+    const shift = this._shifts().find((s) => s.id === shiftId);
+    if (!shift) return undefined;
+    const original = this._employees().find((e) => e.id === shift.employeeId);
+    if (!original) return undefined;
+
+    const busyEmployeeIds = new Set(
+      this._shifts()
+        .filter((s) => s.date === shift.date && s.id !== shift.id)
+        .map((s) => s.employeeId)
+    );
+    const wunschfreiEmployeeIds = new Set(
+      this._shiftPreferences()
+        .filter((p) => p.date === shift.date)
+        .map((p) => p.employeeId)
+    );
+
+    return this.activeEmployees().find(
+      (e) =>
+        e.id !== original.id &&
+        e.role === original.role &&
+        !busyEmployeeIds.has(e.id) &&
+        !wunschfreiEmployeeIds.has(e.id)
+    );
+  }
+
+  /** Setzt eine neue Besetzung für eine Schicht (z. B. nach einem Regelverstoß) und markiert sie als Vertretung. */
+  applyShiftReassignment(shiftId: string, employeeId: string): void {
+    this.updateShift(shiftId, { employeeId, status: 'VERTRETUNG' });
   }
 }

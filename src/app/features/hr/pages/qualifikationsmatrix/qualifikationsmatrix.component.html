@@ -1,0 +1,59 @@
+<h2>Qualifikationsmatrix</h2>
+<p class="subtitle">Qualifikationsnachweis je Pflegekraft und Fachkraftquote gemäß § 71 SGB XI.</p>
+
+<div class="summary-cards">
+  <p-card>
+    <div class="summary-title">Fachkraftquote</div>
+    <div class="summary-value" [class.negative]="!fachkraftquote().erfuellt">{{ quotePercent() }} %</div>
+    <div class="summary-detail">
+      {{ fachkraftquote().examiniertCount }} von {{ fachkraftquote().gesamtCount }} aktiven Pflegekräften examiniert
+    </div>
+    <p-tag
+      [value]="fachkraftquote().erfuellt ? 'Quote erfüllt (≥ 50 %)' : 'Quote unterschritten'"
+      [severity]="fachkraftquote().erfuellt ? 'success' : 'danger'"
+    />
+  </p-card>
+
+  <p-card>
+    <div class="summary-title">Fachkraft-Abdeckung Dienstplan</div>
+    @if (coverageGaps().length === 0) {
+      <div class="summary-value">OK</div>
+      <div class="summary-detail">An jedem geplanten Diensttag der nächsten 14 Tage ist eine examinierte Pflegefachkraft eingeteilt.</div>
+      <p-tag value="Abgedeckt" severity="success" />
+    } @else {
+      <div class="summary-value negative">{{ coverageGaps().length }} Tag(e)</div>
+      <div class="summary-detail">Ohne eingeteilte examinierte Pflegefachkraft: {{ coverageGaps().join(', ') }}</div>
+      <p-tag value="Lücke im Dienstplan" severity="danger" />
+    }
+  </p-card>
+</div>
+
+<p-table [value]="rows()" dataKey="employee.id" [scrollable]="true" scrollHeight="calc(100vh - 420px)" class="auto-scroll-table">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Name</th>
+      <th>Rolle</th>
+      @for (code of columns; track code) {
+        <th class="qual-col">{{ qualificationLabels[code] }}</th>
+      }
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-row>
+    <tr>
+      <td>{{ row.employee.firstName }} {{ row.employee.lastName }}</td>
+      <td>{{ row.roleLabel }}</td>
+      @for (code of columns; track code) {
+        <td class="qual-col">
+          @if (row.has[code]) {
+            <i class="pi pi-check-circle has-qual"></i>
+          } @else {
+            <i class="pi pi-minus no-qual"></i>
+          }
+        </td>
+      }
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td [attr.colspan]="columns.length + 2">Keine Pflegekräfte vorhanden.</td></tr>
+  </ng-template>
+</p-table>

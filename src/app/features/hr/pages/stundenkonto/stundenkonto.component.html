@@ -1,0 +1,41 @@
+<p-toolbar>
+  <ng-template pTemplate="start">
+    <h2>Stundenkonto</h2>
+  </ng-template>
+  <ng-template pTemplate="end">
+    <p-button icon="pi pi-chevron-left" [text]="true" (onClick)="previousMonth()" />
+    <span class="period-label">{{ periodLabel() }}</span>
+    <p-button icon="pi pi-chevron-right" [text]="true" (onClick)="nextMonth()" />
+    <p-button label="Heute" [text]="true" (onClick)="resetMonth()" />
+  </ng-template>
+</p-toolbar>
+
+<p class="subtitle">Soll-Ist-Stundenabgleich und hochgerechneter Saldo des Arbeitszeitkontos für den gewählten Monat.</p>
+
+<p-table [value]="rows()" dataKey="employee.id" [scrollable]="true" scrollHeight="calc(100vh - 260px)" class="auto-scroll-table">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Name</th>
+      <th>Soll-Stunden</th>
+      <th>Ist-Stunden</th>
+      <th>Differenz</th>
+      <th>Zeitkonto-Saldo</th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-row>
+    <tr>
+      <td>{{ row.employee.firstName }} {{ row.employee.lastName }}</td>
+      <td>{{ row.sollHours }} h</td>
+      <td>{{ row.istHours }} h</td>
+      <td [class.positive]="row.diffHours > 0" [class.negative]="row.diffHours < 0">
+        {{ row.diffHours > 0 ? '+' : '' }}{{ row.diffHours }} h
+      </td>
+      <td [class.positive]="row.balanceHours > 0" [class.negative]="row.balanceHours < 0">
+        {{ row.balanceHours > 0 ? '+' : '' }}{{ row.balanceHours }} h
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="5">Keine aktiven Mitarbeiter vorhanden.</td></tr>
+  </ng-template>
+</p-table>
