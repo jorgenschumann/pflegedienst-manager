@@ -1,10 +1,17 @@
 export type Pflegegrad = 0 | 1 | 2 | 3 | 4 | 5; // 0 = kein Pflegegrad (nur Verhinderungspflege o.ä.)
 export type InsuranceType = 'GKV' | 'PKV';
 
+export interface GeoLocation {
+  lat: number;
+  lng: number;
+}
+
 export interface Address {
   street: string;
   zip: string;
   city: string;
+  /** Näherungs-Koordinaten für die Routenoptimierung (Demo: ohne externe Geocoding-API ermittelt). */
+  location?: GeoLocation;
 }
 
 export interface Insurance {

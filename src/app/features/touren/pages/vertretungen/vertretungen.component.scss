@@ -1,0 +1,27 @@
+.subtitle {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.no-suggestion {
+  color: #b91c1c;
+}
+
+p-card i.pi-check-circle {
+  color: #15803d;
+  margin-right: 0.4rem;
+}

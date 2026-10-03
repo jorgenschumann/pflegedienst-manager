@@ -39,6 +39,22 @@ function pickLeistungen(): LeistungCode[] {
   return [...result];
 }
 
+/** Entfernung zwischen zwei Koordinaten in km (Haversine-Formel). */
+function haversineDistanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371; // Erdradius in km
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** Geschätzte Fahrzeit in Minuten für eine Distanz (Annahme: ø 25 km/h im Stadtverkehr, mind. 5 Min). */
+function travelMinutesForDistance(km: number): number {
+  return Math.max(5, Math.round((km / 25) * 60));
+}
+
 function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.split(':').map(Number);
   const total = h * 60 + m + minutes;
@@ -91,8 +107,16 @@ function generateTourData(employees: Employee[], patients: Patient[]): Generated
     return { tours: [], visits: [] };
   }
 
-  // Patienten in Gruppen von ca. 3 einteilen ("Stammtouren").
-  const patientGroups = chunk(activePatients, 3);
+  // Patienten zunächst nach Stadt gruppieren (für sinnvolle, geografisch kompakte Stammtouren und
+  // eine aussagekräftige Routenoptimierung), danach innerhalb der Stadt in Gruppen von ca. 3 einteilen.
+  const byCity = new Map<string, Patient[]>();
+  for (const patient of activePatients) {
+    const key = patient.address.city;
+    const list = byCity.get(key) ?? [];
+    list.push(patient);
+    byCity.set(key, list);
+  }
+  const patientGroups = [...byCity.values()].flatMap((cityPatients) => chunk(cityPatients, 3));
   const groupCount = patientGroups.length;
 
   // Jeder Gruppe dauerhaft eine/n Mitarbeiter/-in zuordnen (rotierend durch den Personalpool).
@@ -230,6 +254,176 @@ export class TourStateService {
     return this._visits()
       .filter((v) => v.tourId === tourId)
       .sort((a, b) => a.sequence - b.sequence);
+  }
+
+  /**
+   * Gesamtfahrstrecke einer Tour in km, berechnet aus den Patientenkoordinaten in der
+   * aktuellen Besuchsreihenfolge (Luftlinie zwischen den Stopps). Liefert `undefined`,
+   * wenn für mindestens einen Stopp keine Koordinaten vorliegen.
+   */
+  routeDistanceKm(tourId: string): number | undefined {
+    const stops = this.visitsForTour(tourId)
+      .map((v) => this.getPatient(v.patientId)?.address.location)
+      .filter((loc): loc is NonNullable<typeof loc> => !!loc);
+    if (stops.length !== this.visitsForTour(tourId).length || stops.length < 2) return stops.length < 2 ? 0 : undefined;
+
+    let total = 0;
+    for (let i = 1; i < stops.length; i++) {
+      total += haversineDistanceKm(stops[i - 1], stops[i]);
+    }
+    return Math.round(total * 10) / 10;
+  }
+
+  /**
+   * Optimiert die Reihenfolge der Besuche einer Tour nach dem Nearest-Neighbor-Verfahren
+   * (ausgehend vom ersten Stopp), um die Gesamtfahrstrecke zu minimieren, und berechnet
+   * die geplanten Zeitfenster anhand der geschätzten Fahrzeiten neu. Besuche ohne
+   * Standortdaten werden unverändert an das Ende angehängt.
+   */
+  optimizeRoute(tourId: string): void {
+    const visits = this.visitsForTour(tourId);
+    if (visits.length < 2) return;
+
+    const withLocation = visits.filter((v) => this.getPatient(v.patientId)?.address.location);
+    const withoutLocation = visits.filter((v) => !this.getPatient(v.patientId)?.address.location);
+    if (withLocation.length < 2) return;
+
+    // Nearest-Neighbor-Heuristik: ausgehend vom bisher ersten Stopp jeweils den nächstgelegenen
+    // noch offenen Stopp anhängen.
+    const remaining = [...withLocation];
+    const ordered: Visit[] = [remaining.shift()!];
+    while (remaining.length > 0) {
+      const current = this.getPatient(ordered[ordered.length - 1].patientId)!.address.location!;
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      remaining.forEach((v, idx) => {
+        const loc = this.getPatient(v.patientId)!.address.location!;
+        const dist = haversineDistanceKm(current, loc);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = idx;
+        }
+      });
+      ordered.push(remaining.splice(bestIdx, 1)[0]);
+    }
+
+    // 2-opt-Verbesserung: Nearest-Neighbor kann einzelne Stopps "abhängen", die dann einen
+    // teuren Umweg am Ende erfordern. Kantenpaare vertauschen, solange sich die Gesamtstrecke
+    // dadurch verkürzt.
+    const locOf = (v: Visit) => this.getPatient(v.patientId)!.address.location!;
+    const routeLength = (route: Visit[]) => {
+      let sum = 0;
+      for (let i = 1; i < route.length; i++) sum += haversineDistanceKm(locOf(route[i - 1]), locOf(route[i]));
+      return sum;
+    };
+    let improved = true;
+    while (improved) {
+      improved = false;
+      for (let i = 0; i < ordered.length - 1; i++) {
+        for (let j = i + 1; j < ordered.length; j++) {
+          const candidate = [...ordered.slice(0, i), ...ordered.slice(i, j + 1).reverse(), ...ordered.slice(j + 1)];
+          if (routeLength(candidate) < routeLength(ordered) - 0.001) {
+            ordered.splice(0, ordered.length, ...candidate);
+            improved = true;
+          }
+        }
+      }
+    }
+
+    // Sicherheitsnetz: Falls die bisherige Reihenfolge (z. B. bei sehr kleinen Touren) bereits
+    // kürzer ist, diese beibehalten statt zu verschlechtern.
+    if (routeLength(withLocation) <= routeLength(ordered) + 0.001) {
+      ordered.splice(0, ordered.length, ...withLocation);
+    }
+
+    const finalOrder = [...ordered, ...withoutLocation];
+
+    // Die Tour startet weiterhin zur ursprünglich frühesten geplanten Zeit, unabhängig davon,
+    // welcher Besuch nach der Optimierung an erster Stelle steht.
+    const originalStart = visits.reduce(
+      (earliest, v) => (v.plannedStart < earliest ? v.plannedStart : earliest),
+      visits[0].plannedStart,
+    );
+    let cursor = originalStart;
+    const updates = new Map<string, { sequence: number; plannedStart: string; plannedEnd: string }>();
+    finalOrder.forEach((visit, idx) => {
+      const prev = idx > 0 ? finalOrder[idx - 1] : undefined;
+      const prevLoc = prev ? this.getPatient(prev.patientId)?.address.location : undefined;
+      const currLoc = this.getPatient(visit.patientId)?.address.location;
+      if (idx > 0) {
+        const travelMin = prevLoc && currLoc ? travelMinutesForDistance(haversineDistanceKm(prevLoc, currLoc)) : 12;
+        cursor = addMinutes(cursor, travelMin);
+      }
+      const duration = this.minutesBetween(visit.plannedStart, visit.plannedEnd);
+      const start = cursor;
+      const end = addMinutes(start, duration);
+      cursor = end;
+      updates.set(visit.id, { sequence: idx + 1, plannedStart: start, plannedEnd: end });
+    });
+
+    this._visits.update((list) =>
+      list.map((v) => {
+        const update = updates.get(v.id);
+        return update ? { ...v, ...update } : v;
+      })
+    );
+  }
+
+  private minutesBetween(start: string, end: string): number {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    return eh * 60 + em - (sh * 60 + sm);
+  }
+
+  /**
+   * Betroffene, noch nicht umgeplante Touren für eine genehmigte Abwesenheit:
+   * Touren der abwesenden Person, deren Datum im Abwesenheitszeitraum liegt und
+   * die noch nicht abgeschlossen sind. Sobald eine Tour umverteilt wurde, verschwindet
+   * sie automatisch aus dieser Liste (employeeId stimmt dann nicht mehr überein).
+   */
+  affectedToursForAbsence(absence: { employeeId: string; startDate: string; endDate: string }): Tour[] {
+    return this._tours().filter(
+      (t) =>
+        t.employeeId === absence.employeeId &&
+        t.date >= absence.startDate &&
+        t.date <= absence.endDate &&
+        t.status !== 'ABGESCHLOSSEN'
+    );
+  }
+
+  /**
+   * Schlägt eine Vertretung für eine Tour vor: aktives Personal mit passender Rolle,
+   * das am Tourtag weder abwesend noch bereits mit einer eigenen Tour verplant ist.
+   * Bevorzugt dieselbe Rolle wie die ursprünglich eingeteilte Person.
+   */
+  suggestReplacement(tourId: string): Employee | undefined {
+    const tour = this.getTour(tourId);
+    if (!tour) return undefined;
+    const originalEmployee = this.getEmployee(tour.employeeId);
+
+    const busyEmployeeIds = new Set(
+      this._tours()
+        .filter((t) => t.date === tour.date && t.id !== tourId)
+        .map((t) => t.employeeId)
+    );
+    const absentEmployeeIds = new Set(
+      this.hrState
+        .absences()
+        .filter((a) => a.status === 'GENEHMIGT' && tour.date >= a.startDate && tour.date <= a.endDate)
+        .map((a) => a.employeeId)
+    );
+
+    const candidates = this.tourPersonal().filter(
+      (e) => e.id !== tour.employeeId && !busyEmployeeIds.has(e.id) && !absentEmployeeIds.has(e.id)
+    );
+
+    const sameRole = candidates.filter((e) => e.role === originalEmployee?.role);
+    return sameRole[0] ?? candidates[0];
+  }
+
+  /** Weist die Vertretung zu und übernimmt sie als neue/n verantwortliche/n Mitarbeiter/-in der Tour. */
+  applySubstitution(tourId: string, employeeId: string): void {
+    this.reassignTourEmployee(tourId, employeeId);
   }
 
   getEmployee(employeeId: string): Employee | undefined {

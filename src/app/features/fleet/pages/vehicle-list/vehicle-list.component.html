@@ -1,0 +1,104 @@
+<p-toolbar>
+  <ng-template pTemplate="start">
+    <h2>Fuhrpark</h2>
+  </ng-template>
+  <ng-template pTemplate="end">
+    <div class="filters">
+      <p-select [options]="typeOptions" [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event)" optionLabel="label" optionValue="value" />
+      <p-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" optionLabel="label" optionValue="value" />
+    </div>
+  </ng-template>
+</p-toolbar>
+
+@if (vehiclesNeedingAttention().length > 0) {
+  <p-card class="attention-card">
+    <i class="pi pi-exclamation-triangle"></i>
+    {{ vehiclesNeedingAttention().length }} Fahrzeug(e) in Wartung oder mit baldiger TÜV-Fälligkeit.
+  </p-card>
+}
+
+<p-table [value]="rows()" dataKey="id" [scrollable]="true" scrollHeight="calc(100vh - 320px)" class="auto-scroll-table">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Kennzeichen</th>
+      <th>Typ</th>
+      <th>Modell</th>
+      <th>Status</th>
+      <th>Zugeordnet</th>
+      <th>Kilometerstand</th>
+      <th>km (Monat)</th>
+      <th>TÜV</th>
+      <th></th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-vehicle>
+    <tr>
+      <td>{{ vehicle.kennzeichen }}</td>
+      <td>{{ typeLabel(vehicle.type) }}</td>
+      <td>{{ vehicle.model }}</td>
+      <td><p-tag [value]="statusLabel(vehicle.status)" [severity]="statusSeverity(vehicle.status)" /></td>
+      <td>{{ employeeName(vehicle.assignedEmployeeId) }}</td>
+      <td>{{ vehicle.kilometerstand | number }} km</td>
+      <td>{{ monthlyKm(vehicle.id) | number }} km</td>
+      <td>
+        @if (vehicle.tuevFaelligkeit) {
+          <span [class.due-warning]="isTuevDue(vehicle)">{{ vehicle.tuevFaelligkeit }}</span>
+        } @else {
+          —
+        }
+      </td>
+      <td class="actions">
+        <p-button icon="pi pi-user-edit" [text]="true" size="small" pTooltip="Zuordnen" (onClick)="openAssign(vehicle)" />
+        <p-button icon="pi pi-book" [text]="true" size="small" pTooltip="Fahrtenbuch" (onClick)="openMileage(vehicle)" />
+        @if (vehicle.status !== 'WARTUNG') {
+          <p-button icon="pi pi-wrench" [text]="true" size="small" pTooltip="In Wartung geben" (onClick)="setStatus(vehicle, 'WARTUNG')" />
+        } @else {
+          <p-button icon="pi pi-check" [text]="true" size="small" pTooltip="Wartung abschließen" (onClick)="setStatus(vehicle, 'VERFUEGBAR')" />
+        }
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="9">Keine Fahrzeuge für diese Filterkriterien gefunden.</td></tr>
+  </ng-template>
+</p-table>
+
+<p-dialog [(visible)]="assignDialogVisible" header="Fahrzeug zuordnen" [modal]="true" [style]="{ width: '24rem' }">
+  <p-select
+    [options]="employeeOptions()"
+    [ngModel]="assignSelection()"
+    (ngModelChange)="assignSelection.set($event)"
+    optionLabel="label"
+    optionValue="value"
+    [style]="{ width: '100%' }"
+  />
+  <div class="dialog-actions">
+    <p-button label="Speichern" icon="pi pi-check" (onClick)="confirmAssign()" />
+  </div>
+</p-dialog>
+
+<p-dialog [(visible)]="mileageDialogVisible" header="Fahrtenbuch" [modal]="true" [style]="{ width: '36rem' }">
+  <p-table [value]="mileageEntries()" [scrollable]="true" scrollHeight="20rem" class="auto-scroll-table">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Datum</th>
+        <th>Zweck</th>
+        <th>Start-km</th>
+        <th>End-km</th>
+        <th>Distanz</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-entry>
+      <tr>
+        <td>{{ entry.date }}</td>
+        <td>{{ entry.purpose }}</td>
+        <td>{{ entry.startKm | number }}</td>
+        <td>{{ entry.endKm | number }}</td>
+        <td>{{ entry.endKm - entry.startKm }} km</td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="5">Keine Fahrtenbuch-Einträge für dieses Fahrzeug.</td></tr>
+    </ng-template>
+  </p-table>
+</p-dialog>

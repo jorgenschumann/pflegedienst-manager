@@ -37,6 +37,16 @@ export const routes: Routes = [
       import('./features/touren/pages/touren-plan/touren-plan.component').then((m) => m.TourenPlanComponent)
   },
   {
+    path: 'touren/vertretungen',
+    loadComponent: () =>
+      import('./features/touren/pages/vertretungen/vertretungen.component').then((m) => m.VertretungenComponent)
+  },
+  {
+    path: 'fuhrpark',
+    loadComponent: () =>
+      import('./features/fleet/pages/vehicle-list/vehicle-list.component').then((m) => m.VehicleListComponent)
+  },
+  {
     path: 'reporting',
     loadComponent: () =>
       import('./features/reporting/pages/reporting-dashboard/reporting-dashboard.component').then(

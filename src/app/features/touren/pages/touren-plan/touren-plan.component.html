@@ -64,6 +64,16 @@
           <div class="tour-card-header">
             <span class="tour-name">{{ tourLabel(tour) }}</span>
             <div class="tour-header-actions">
+              @if (routeDistanceLabel(tour.id); as distance) {
+                <span class="route-distance">{{ distance }}</span>
+              }
+              <p-button
+                icon="pi pi-sort-alt"
+                [text]="true"
+                size="small"
+                pTooltip="Route optimieren (kürzeste Fahrstrecke)"
+                (onClick)="optimizeRoute(tour.id)"
+              />
               <p-tag [value]="tour.status" [severity]="tourStatusSeverity(tour.status)" />
               <p-button icon="pi pi-pencil" [text]="true" (onClick)="openEdit(tour.id)" />
             </div>

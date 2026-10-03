@@ -308,6 +308,17 @@ const INITIAL_ABSENCES: Absence[] = [
     endDate: iso(9),
     days: 5,
     requestedAt: new Date().toISOString()
+  },
+  {
+    id: 'abs-2',
+    employeeId: 'emp-1',
+    type: 'KRANKHEIT',
+    status: 'GENEHMIGT',
+    startDate: iso(1),
+    endDate: iso(2),
+    days: 2,
+    requestedAt: new Date().toISOString(),
+    decidedBy: 'emp-3'
   }
 ];
 

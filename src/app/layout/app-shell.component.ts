@@ -27,6 +27,8 @@ export class AppShellComponent {
     { label: 'Dienstplan', icon: 'pi pi-calendar', route: '/hr/dienstplan' },
     { label: 'Patienten', icon: 'pi pi-heart', route: '/patienten' },
     { label: 'Touren', icon: 'pi pi-map', route: '/touren' },
+    { label: 'Vertretungen', icon: 'pi pi-user-edit', route: '/touren/vertretungen' },
+    { label: 'Fuhrpark', icon: 'pi pi-car', route: '/fuhrpark' },
     { label: 'Reporting', icon: 'pi pi-chart-bar', route: '/reporting' },
     { label: 'Abwesenheiten', icon: 'pi pi-briefcase', route: '/hr/abwesenheiten' },
     { label: 'Abrechnung', icon: 'pi pi-euro', route: '/abrechnung' },

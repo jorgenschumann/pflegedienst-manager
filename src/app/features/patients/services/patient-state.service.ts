@@ -52,12 +52,12 @@ const STREETS = [
 ];
 
 const CITIES = [
-  { zip: '70173', city: 'Stuttgart' },
-  { zip: '76133', city: 'Karlsruhe' },
-  { zip: '79098', city: 'Freiburg im Breisgau' },
-  { zip: '68159', city: 'Mannheim' },
-  { zip: '72070', city: 'Tübingen' },
-  { zip: '89073', city: 'Ulm' }
+  { zip: '70173', city: 'Stuttgart', lat: 48.7758, lng: 9.1829 },
+  { zip: '76133', city: 'Karlsruhe', lat: 49.0069, lng: 8.4037 },
+  { zip: '79098', city: 'Freiburg im Breisgau', lat: 47.9990, lng: 7.8421 },
+  { zip: '68159', city: 'Mannheim', lat: 49.4875, lng: 8.4660 },
+  { zip: '72070', city: 'Tübingen', lat: 48.5216, lng: 9.0576 },
+  { zip: '89073', city: 'Ulm', lat: 48.4011, lng: 9.9876 }
 ];
 
 const INSURANCE_PROVIDERS = [
@@ -123,7 +123,9 @@ function generatePatients(): Patient[] {
       address: {
         street: `${pick(STREETS)} ${1 + Math.floor(rng() * 60)}`,
         zip: location.zip,
-        city: location.city
+        city: location.city,
+        // Jitter von bis zu ±0.03° (≈ ±3 km) um das Stadtzentrum, um plausible Einzeladressen zu simulieren.
+        location: { lat: location.lat + (rng() - 0.5) * 0.06, lng: location.lng + (rng() - 0.5) * 0.06 }
       },
       phone: `0711-${(2000000 + i * 37).toString()}`,
       insurance: {

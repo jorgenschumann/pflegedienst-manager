@@ -59,6 +59,12 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+
+  .route-distance {
+    font-size: 0.72rem;
+    color: var(--p-text-muted-color);
+    white-space: nowrap;
+  }
 }
 
 .visit-list {

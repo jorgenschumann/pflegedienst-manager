@@ -1,0 +1,31 @@
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.attention-card {
+  margin-bottom: 1rem;
+  color: #b45309;
+
+  i {
+    margin-right: 0.4rem;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.due-warning {
+  color: #b91c1c;
+  font-weight: 600;
+}

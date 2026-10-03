@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -28,6 +29,7 @@ type TourStatusFilter = 'ALLE' | Tour['status'];
     ButtonModule,
     CardModule,
     TagModule,
+    TooltipModule,
     DatePickerModule,
     DialogModule,
     InputTextModule,
@@ -118,6 +120,16 @@ export class TourenPlanComponent {
   tourLabel(tour: Tour): string {
     const prefix = tour.name.split('–')[0].trim();
     return `${prefix} – ${this.employeeName(tour.employeeId)}`;
+  }
+
+  routeDistanceLabel(tourId: string): string | null {
+    const km = this.tourState.routeDistanceKm(tourId);
+    if (km === undefined) return null;
+    return `${km.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km Fahrstrecke`;
+  }
+
+  optimizeRoute(tourId: string): void {
+    this.tourState.optimizeRoute(tourId);
   }
 
   employeeName(employeeId: string): string {
