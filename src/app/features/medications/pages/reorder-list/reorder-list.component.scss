@@ -1,0 +1,51 @@
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.3rem;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.sim-hint {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+  max-width: 48rem;
+}
+
+p-card {
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
+.table-scroll {
+  margin-top: 0.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.85rem;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  input,
+  p-inputnumber {
+    width: 100%;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}

@@ -1,0 +1,81 @@
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.3rem;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.sim-hint {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+  max-width: 48rem;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr;
+  gap: 0.85rem;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem 0;
+  font-weight: 600;
+  gap: 0.5rem;
+}
+
+.table-scroll {
+  margin-top: 0.5rem;
+}
+
+.selected-row {
+  background: #eff6ff;
+  cursor: pointer;
+}
+
+tr {
+  cursor: pointer;
+}
+
+.hint {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.85rem;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  input,
+  textarea,
+  p-select,
+  p-inputnumber {
+    width: 100%;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}

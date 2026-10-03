@@ -237,6 +237,17 @@
             <p class="bmp-import-hint">{{ msg }}</p>
           }
 
+          @if (interactionWarnings().length > 0) {
+            <div class="interaction-warnings">
+              @for (warning of interactionWarnings(); track warning.medicationAId + warning.medicationBId) {
+                <div class="interaction-warning">
+                  <p-tag [value]="interactionSeverityLabel(warning.severity)" [severity]="interactionSeverityTagSeverity(warning.severity)" />
+                  <span><strong>{{ warning.medicationAName }}</strong> + <strong>{{ warning.medicationBName }}</strong>: {{ warning.description }}</span>
+                </div>
+              }
+            </div>
+          }
+
           <p-table
             [value]="activeMedications()"
             dataKey="id"

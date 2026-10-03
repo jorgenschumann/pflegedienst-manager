@@ -1,0 +1,94 @@
+<div class="page-header">
+  <h2>Lagerbestand & Nachbestellung</h2>
+</div>
+<p class="sim-hint">
+  Medikamente mit niedrigem Lagerbestand oder bald auslaufendem Rezept-Vorrat – patientenübergreifend.
+</p>
+
+<p-card header="Nachbestellbedarf">
+  <div class="table-scroll">
+    <p-table [value]="reorderCandidates()" dataKey="medication.id" [scrollable]="true" scrollHeight="calc(100vh - 480px)" class="auto-scroll-table">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Patient</th>
+          <th>Medikament</th>
+          <th>Bestand</th>
+          <th>Meldebestand</th>
+          <th>Vorrat bis</th>
+          <th>Grund</th>
+          <th></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ row.patientName }}</td>
+          <td>
+            {{ row.medication.name }} ({{ row.medication.dosage }})
+            @if (row.medication.isBtm) {
+              <p-tag value="BTM" severity="danger" />
+            }
+          </td>
+          <td>
+            @if (row.medication.currentStock !== undefined) {
+              {{ row.medication.currentStock }} {{ row.medication.stockUnit }}
+            } @else {
+              –
+            }
+          </td>
+          <td>{{ row.medication.reorderThreshold }} {{ row.medication.stockUnit }}</td>
+          <td>{{ row.medication.supplyUntil ? (row.medication.supplyUntil | date: 'dd.MM.yyyy') : '–' }}</td>
+          <td><p-tag [value]="stockReason(row)" severity="warn" /></td>
+          <td>
+            <p-button label="Bestellen" icon="pi pi-shopping-cart" size="small" (onClick)="markOrdered(row)" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="7">Kein Nachbestellbedarf – alle Bestände ausreichend.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</p-card>
+
+<p-card header="Laufende Bestellungen">
+  <div class="table-scroll">
+    <p-table [value]="openOrders()" dataKey="medication.id" [scrollable]="true" scrollHeight="18rem" class="auto-scroll-table">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Patient</th>
+          <th>Medikament</th>
+          <th>Bestellt am</th>
+          <th></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ row.patientName }}</td>
+          <td>{{ row.medication.name }} ({{ row.medication.dosage }})</td>
+          <td>{{ row.medication.lastOrderedAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+          <td>
+            <p-button label="Wareneingang bestätigen" icon="pi pi-check" size="small" severity="success" (onClick)="openDeliveryDialog(row)" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="4">Keine laufenden Bestellungen.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</p-card>
+
+<p-dialog [(visible)]="deliveryDialogVisible" header="Wareneingang bestätigen" [modal]="true" [style]="{ width: '26rem' }">
+  <div class="field">
+    <label>Gelieferte Menge</label>
+    <p-inputnumber [ngModel]="deliveryQuantity()" (ngModelChange)="deliveryQuantity.set($event)" [min]="1" />
+  </div>
+  <div class="field">
+    <label>Entgegengenommen von</label>
+    <input type="text" pInputText [ngModel]="deliveryPerformedBy()" (ngModelChange)="deliveryPerformedBy.set($event)" />
+  </div>
+  <div class="form-actions">
+    <p-button label="Abbrechen" severity="secondary" [text]="true" (onClick)="deliveryDialogVisible.set(false)" />
+    <p-button label="Bestätigen" (onClick)="confirmDelivery()" [disabled]="!deliveryPerformedBy().trim()" />
+  </div>
+</p-dialog>

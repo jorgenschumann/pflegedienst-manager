@@ -28,6 +28,13 @@ export const MEDICATION_TIME_LABELS: Record<MedicationTime, string> = {
   BEI_BEDARF: 'Bei Bedarf'
 };
 
+export type ReorderStatus = 'OFFEN' | 'BESTELLT';
+
+export const REORDER_STATUS_LABELS: Record<ReorderStatus, string> = {
+  OFFEN: 'Nachbestellung nötig',
+  BESTELLT: 'Bestellt'
+};
+
 /** Medikamentenplan-Eintrag eines Patienten (Dauer- oder Bedarfsmedikation). */
 export interface Medication {
   id: string;
@@ -48,6 +55,16 @@ export interface Medication {
   supplyUntil?: string; // ISO-Datum
   note?: string;
   active: boolean;
+  /** Aktueller Lagerbestand am Pflegedienst-Depot (für Nachbestellung & BTM-Bestandsbuch). */
+  currentStock?: number;
+  /** Einheit des Lagerbestands, z. B. "Stk.", "Tbl.", "ml". */
+  stockUnit?: string;
+  /** Meldebestand – wird dieser unterschritten, erscheint das Medikament in der Nachbestell-Liste. */
+  reorderThreshold?: number;
+  /** Status einer laufenden Nachbestellung. */
+  reorderStatus?: ReorderStatus;
+  /** Zeitpunkt der letzten Nachbestellung. */
+  lastOrderedAt?: string;
 }
 
 export type MedicationAdministrationStatus = 'GEGEBEN' | 'VERWEIGERT' | 'AUSGELASSEN';

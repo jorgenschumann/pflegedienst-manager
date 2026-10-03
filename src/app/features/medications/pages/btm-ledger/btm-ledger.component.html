@@ -1,0 +1,130 @@
+<div class="page-header">
+  <h2>Betäubungsmittel-Bestandsbuch</h2>
+  <p-tag value="§ 13 BtMVV" severity="info" />
+</div>
+<p class="sim-hint">
+  Lückenlose Dokumentation von Zugängen, Abgängen (Gaben), Vernichtungen und Korrekturen je
+  Betäubungsmittel – patientenübergreifend über alle laufenden BTM-Verordnungen.
+</p>
+
+<div class="layout-grid">
+  <p-card header="Betäubungsmittel">
+    <div class="table-scroll">
+      <p-table
+        [value]="rows()"
+        dataKey="medication.id"
+        [scrollable]="true"
+        scrollHeight="calc(100vh - 360px)"
+        class="auto-scroll-table"
+        selectionMode="single"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Patient</th>
+            <th>Medikament</th>
+            <th>Bestand</th>
+            <th>Meldebestand</th>
+            <th>Status</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr
+            [class.selected-row]="row.medication.id === selectedMedicationId()"
+            (click)="selectMedication(row.medication.id)"
+          >
+            <td>{{ row.patientName }}</td>
+            <td>{{ row.medication.name }} ({{ row.medication.dosage }})</td>
+            <td>
+              <p-tag [value]="row.medication.currentStock + ' ' + (row.medication.stockUnit || '')" [severity]="stockSeverity(row.medication)" />
+            </td>
+            <td>{{ row.medication.reorderThreshold }} {{ row.medication.stockUnit }}</td>
+            <td>
+              <p-tag [value]="row.medication.active ? 'Aktiv' : 'Abgesetzt'" [severity]="row.medication.active ? 'success' : 'secondary'" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="5">Keine Betäubungsmittel vorhanden.</td></tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </p-card>
+
+  <p-card>
+    <ng-template pTemplate="header">
+      <div class="card-header-row">
+        <span>
+          @if (selectedRow(); as row) {
+            Bestandsbuch: {{ row.medication.name }} ({{ row.patientName }})
+          } @else {
+            Bestandsbuch
+          }
+        </span>
+        @if (selectedMedicationId()) {
+          <p-button label="Bewegung buchen" icon="pi pi-plus" size="small" (onClick)="openMovementDialog()" />
+        }
+      </div>
+    </ng-template>
+
+    @if (!selectedMedicationId()) {
+      <p class="hint">Bitte links ein Betäubungsmittel auswählen.</p>
+    } @else {
+      <div class="table-scroll">
+        <p-table [value]="ledgerEntries()" dataKey="id" [scrollable]="true" scrollHeight="calc(100vh - 420px)" class="auto-scroll-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Datum</th>
+              <th>Buchungsart</th>
+              <th>Menge</th>
+              <th>Bestand danach</th>
+              <th>Durchgeführt von</th>
+              <th>Bezeugt von</th>
+              <th>Notiz</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-entry>
+            <tr>
+              <td>{{ entry.date | date: 'dd.MM.yyyy HH:mm' }}</td>
+              <td><p-tag [value]="movementLabel(entry.type)" [severity]="entry.type === 'ZUGANG' ? 'success' : entry.type === 'VERNICHTUNG' ? 'danger' : 'info'" /></td>
+              <td>{{ entry.quantity }} {{ entry.unit }}</td>
+              <td>{{ entry.resultingStock }} {{ entry.unit }}</td>
+              <td>{{ entry.performedBy }}</td>
+              <td>{{ entry.witnessedBy || '–' }}</td>
+              <td>{{ entry.note || '–' }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="7">Keine Buchungen vorhanden.</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+  </p-card>
+</div>
+
+<p-dialog [(visible)]="movementDialogVisible" header="Bestandsbewegung buchen" [modal]="true" [style]="{ width: '28rem' }">
+  <div class="field">
+    <label>Buchungsart</label>
+    <p-select [options]="movementTypeOptions" [ngModel]="movementType()" (ngModelChange)="movementType.set($event)" optionLabel="label" optionValue="value" />
+  </div>
+  <div class="field">
+    <label>Menge</label>
+    <p-inputnumber [ngModel]="movementQuantity()" (ngModelChange)="movementQuantity.set($event)" [min]="1" />
+  </div>
+  <div class="field">
+    <label>Durchführende Person</label>
+    <input type="text" pInputText [ngModel]="movementPerformedBy()" (ngModelChange)="movementPerformedBy.set($event)" />
+  </div>
+  <div class="field">
+    <label>Bezeugende Person (Vier-Augen-Prinzip, optional)</label>
+    <input type="text" pInputText [ngModel]="movementWitnessedBy()" (ngModelChange)="movementWitnessedBy.set($event)" />
+  </div>
+  <div class="field">
+    <label>Notiz (optional)</label>
+    <textarea pTextarea [ngModel]="movementNote()" (ngModelChange)="movementNote.set($event)" rows="2"></textarea>
+  </div>
+  <div class="form-actions">
+    <p-button label="Abbrechen" severity="secondary" [text]="true" (onClick)="movementDialogVisible.set(false)" />
+    <p-button label="Buchen" (onClick)="confirmMovement()" [disabled]="!movementPerformedBy().trim()" />
+  </div>
+</p-dialog>

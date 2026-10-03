@@ -80,5 +80,15 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/ti/pages/ti-status/ti-status.component').then((m) => m.TiStatusComponent)
   },
+  {
+    path: 'medikamente/btm-buch',
+    loadComponent: () =>
+      import('./features/medications/pages/btm-ledger/btm-ledger.component').then((m) => m.BtmLedgerComponent)
+  },
+  {
+    path: 'medikamente/nachbestellung',
+    loadComponent: () =>
+      import('./features/medications/pages/reorder-list/reorder-list.component').then((m) => m.ReorderListComponent)
+  },
   { path: '**', redirectTo: 'dashboard' }
 ];

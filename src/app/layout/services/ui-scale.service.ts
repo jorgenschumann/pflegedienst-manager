@@ -45,6 +45,6 @@ export class UiScaleService {
     if (Number.isFinite(stored) && stored >= MIN_FONT_SIZE && stored <= MAX_FONT_SIZE) {
       return stored;
     }
-    return BASE_FONT_SIZE;
+    return MIN_FONT_SIZE;
   }
 }

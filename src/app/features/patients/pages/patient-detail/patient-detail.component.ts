@@ -15,7 +15,10 @@ import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { PatientStateService } from '../../services/patient-state.service';
 import {
+  checkInteractions,
   Contact,
+  InteractionSeverity,
+  INTERACTION_SEVERITY_LABELS,
   MdkAssessment,
   MDK_STATUS_LABELS,
   MedicationAdministrationStatus,
@@ -76,6 +79,7 @@ export class PatientDetailComponent {
   readonly medications = computed(() => this.patientState.getMedications(this.patientId()));
   readonly activeMedications = computed(() => this.medications().filter((m) => m.active));
   readonly discontinuedMedications = computed(() => this.medications().filter((m) => !m.active));
+  readonly interactionWarnings = computed(() => checkInteractions(this.medications()));
   readonly administrations = computed(() => this.patientState.getMedicationAdministrations(this.patientId()));
   readonly pflegegradHistory = computed(() => this.patientState.getPflegegradHistory(this.patientId()));
   readonly mdkAssessments = computed(() => this.patientState.getMdkAssessments(this.patientId()));
@@ -85,6 +89,7 @@ export class PatientDetailComponent {
   readonly riskLabels = RISK_ASSESSMENT_LABELS;
   readonly mdkStatusLabels = MDK_STATUS_LABELS;
   readonly poaLabels = POWER_OF_ATTORNEY_LABELS;
+  readonly interactionSeverityLabels = INTERACTION_SEVERITY_LABELS;
 
   readonly medicationDialogVisible = signal(false);
   readonly administrationDialogVisible = signal(false);
@@ -146,6 +151,16 @@ export class PatientDetailComponent {
 
   poaLabel(poa: PowerOfAttorneyType): string {
     return this.poaLabels[poa];
+  }
+
+  interactionSeverityLabel(severity: InteractionSeverity): string {
+    return this.interactionSeverityLabels[severity];
+  }
+
+  interactionSeverityTagSeverity(severity: InteractionSeverity): 'danger' | 'warn' | 'info' {
+    if (severity === 'HOCH') return 'danger';
+    if (severity === 'MITTEL') return 'warn';
+    return 'info';
   }
 
   age(dateOfBirth: string): number {

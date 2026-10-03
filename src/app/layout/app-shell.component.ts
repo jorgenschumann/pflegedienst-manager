@@ -35,7 +35,9 @@ export class AppShellComponent {
     { label: 'Reporting', icon: 'pi pi-chart-bar', route: '/reporting' },
     { label: 'Abwesenheiten', icon: 'pi pi-briefcase', route: '/hr/abwesenheiten' },
     { label: 'Abrechnung', icon: 'pi pi-euro', route: '/abrechnung' },
-    { label: 'TI', icon: 'pi pi-shield', route: '/ti' }
+    { label: 'TI', icon: 'pi pi-shield', route: '/ti' },
+    { label: 'BTM-Bestandsbuch', icon: 'pi pi-lock', route: '/medikamente/btm-buch' },
+    { label: 'Nachbestellung', icon: 'pi pi-shopping-cart', route: '/medikamente/nachbestellung' }
   ];
 
   readonly pendingAbsenceCount = this.hrState.pendingAbsenceRequests;

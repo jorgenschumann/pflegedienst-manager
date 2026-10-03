@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
+  BtmLedgerEntry,
   Contact,
   MdkAssessment,
   Medication,
@@ -253,26 +254,30 @@ const MEDICATION_CATALOG: {
   schedule: MedicationTime[];
   isBtm?: boolean;
   instructions?: string;
+  stockUnit: string;
+  reorderThreshold: number;
 }[] = [
-  { name: 'Ramipril 5 mg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'Morgens vor dem Frühstück' },
-  { name: 'Metformin 850 mg', dosage: '1-0-1', form: 'TABLETTE', schedule: ['MORGENS', 'ABENDS'], instructions: 'Zu den Mahlzeiten einnehmen' },
-  { name: 'ASS 100', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'Nach dem Essen' },
-  { name: 'L-Thyroxin 75 µg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'Nüchtern, 30 Min. vor dem Frühstück' },
-  { name: 'Simvastatin 20 mg', dosage: '0-0-1', form: 'TABLETTE', schedule: ['ABENDS'], instructions: 'Abends einnehmen' },
-  { name: 'Pantoprazol 40 mg', dosage: '1-0-0', form: 'KAPSEL', schedule: ['MORGENS'], instructions: 'Vor dem Essen, nicht zerkauen' },
-  { name: 'Torasemid 10 mg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'] },
-  { name: 'Bisoprolol 5 mg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'] },
-  { name: 'Novaminsulfon-Tropfen', dosage: '20 Tropfen', form: 'TROPFEN', schedule: ['BEI_BEDARF'], instructions: 'Bei Bedarf, max. 4x täglich' },
-  { name: 'Macrogol', dosage: '1 Btl.', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'In einem Glas Wasser auflösen' },
+  { name: 'Ramipril 5 mg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'Morgens vor dem Frühstück', stockUnit: 'Tbl.', reorderThreshold: 10 },
+  { name: 'Metformin 850 mg', dosage: '1-0-1', form: 'TABLETTE', schedule: ['MORGENS', 'ABENDS'], instructions: 'Zu den Mahlzeiten einnehmen', stockUnit: 'Tbl.', reorderThreshold: 14 },
+  { name: 'ASS 100', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'Nach dem Essen', stockUnit: 'Tbl.', reorderThreshold: 10 },
+  { name: 'L-Thyroxin 75 µg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'Nüchtern, 30 Min. vor dem Frühstück', stockUnit: 'Tbl.', reorderThreshold: 10 },
+  { name: 'Simvastatin 20 mg', dosage: '0-0-1', form: 'TABLETTE', schedule: ['ABENDS'], instructions: 'Abends einnehmen', stockUnit: 'Tbl.', reorderThreshold: 10 },
+  { name: 'Pantoprazol 40 mg', dosage: '1-0-0', form: 'KAPSEL', schedule: ['MORGENS'], instructions: 'Vor dem Essen, nicht zerkauen', stockUnit: 'Kps.', reorderThreshold: 10 },
+  { name: 'Torasemid 10 mg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], stockUnit: 'Tbl.', reorderThreshold: 10 },
+  { name: 'Bisoprolol 5 mg', dosage: '1-0-0', form: 'TABLETTE', schedule: ['MORGENS'], stockUnit: 'Tbl.', reorderThreshold: 10 },
+  { name: 'Novaminsulfon-Tropfen', dosage: '20 Tropfen', form: 'TROPFEN', schedule: ['BEI_BEDARF'], instructions: 'Bei Bedarf, max. 4x täglich', stockUnit: 'ml', reorderThreshold: 15 },
+  { name: 'Macrogol', dosage: '1 Btl.', form: 'TABLETTE', schedule: ['MORGENS'], instructions: 'In einem Glas Wasser auflösen', stockUnit: 'Btl.', reorderThreshold: 10 },
   {
     name: 'Oxycodon 10 mg',
     dosage: '1-0-1',
     form: 'TABLETTE',
     schedule: ['MORGENS', 'ABENDS'],
     isBtm: true,
-    instructions: 'Vier-Augen-Prinzip: Gabe durch zweite Fachkraft bestätigen lassen'
+    instructions: 'Vier-Augen-Prinzip: Gabe durch zweite Fachkraft bestätigen lassen',
+    stockUnit: 'Stk.',
+    reorderThreshold: 10
   },
-  { name: 'Marcumar', dosage: 'nach Plan', form: 'TABLETTE', schedule: ['ABENDS'], instructions: 'Gemäß aktuellem Gerinnungs-Ausweis' }
+  { name: 'Marcumar', dosage: 'nach Plan', form: 'TABLETTE', schedule: ['ABENDS'], instructions: 'Gemäß aktuellem Gerinnungs-Ausweis', stockUnit: 'Tbl.', reorderThreshold: 10 }
 ];
 
 /** Generiert einen plausiblen Medikationsplan (1–4 Medikamente) je aktivem Patienten. */
@@ -305,7 +310,11 @@ function generateMedications(patients: Patient[]): Medication[] {
         prescribedBy: pick(['Dr. med. Brandt', 'Dr. med. Vogel', 'Dr. med. Lindner', 'Dr. med. Ahrens']),
         // Vorrat: ca. 10% der Medikamente laufen demnächst (0–10 Tage) aus, Rest 11–45 Tage – für Rezeptmanagement-Demo.
         supplyUntil: isoOffset(rng() > 0.9 ? Math.floor(rng() * 10) : 11 + Math.floor(rng() * 35)),
-        active: true
+        active: true,
+        // Lagerbestand: ca. 20% der Medikamente liegen bereits unter dem Meldebestand – für die Nachbestell-Demo.
+        currentStock: rng() > 0.8 ? Math.max(0, entry.reorderThreshold - 1 - Math.floor(rng() * 5)) : entry.reorderThreshold + 2 + Math.floor(rng() * 20),
+        stockUnit: entry.stockUnit,
+        reorderThreshold: entry.reorderThreshold
       });
     }
   }
@@ -339,6 +348,65 @@ function generateMedicationAdministrations(medications: Medication[]): Medicatio
   }
 
   return administrations;
+}
+
+const BTM_NURSES = ['Anna Keller', 'Julia Schröder', 'Laura Hofmann', 'Sophie Meier', 'Markus Weber'];
+
+/**
+ * Erzeugt das lückenlose BTM-Bestandsbuch (§ 13 BtMVV) für alle Betäubungsmittel: ein
+ * Eröffnungszugang sowie je protokollierter Gabe ein Abgang mit fortlaufendem Bestand.
+ * Trägt den errechneten Endbestand zusätzlich in `medication.currentStock` ein.
+ */
+function generateBtmLedger(
+  medications: Medication[],
+  administrations: MedicationAdministration[]
+): BtmLedgerEntry[] {
+  const entries: BtmLedgerEntry[] = [];
+
+  for (const med of medications) {
+    if (!med.isBtm) continue;
+
+    let stock = 20;
+    entries.push({
+      id: `btm-${med.id}-opening`,
+      medicationId: med.id,
+      patientId: med.patientId,
+      date: `${med.startDate}T09:00:00`,
+      type: 'ZUGANG',
+      quantity: stock,
+      unit: med.stockUnit ?? 'Stk.',
+      resultingStock: stock,
+      performedBy: pick(BTM_NURSES),
+      witnessedBy: pick(BTM_NURSES),
+      note: 'Erstausstattung bei Übernahme in die Betreuung'
+    });
+
+    const relatedAdministrations = administrations
+      .filter((a) => a.medicationId === med.id && a.status === 'GEGEBEN')
+      .sort((a, b) => a.administeredAt.localeCompare(b.administeredAt));
+
+    for (const admin of relatedAdministrations) {
+      stock -= 1;
+      entries.push({
+        id: `btm-${med.id}-${admin.id}`,
+        medicationId: med.id,
+        patientId: med.patientId,
+        date: admin.administeredAt,
+        type: 'ABGANG',
+        quantity: 1,
+        unit: med.stockUnit ?? 'Stk.',
+        resultingStock: stock,
+        performedBy: admin.confirmedBy,
+        witnessedBy: admin.secondConfirmedBy,
+        administrationId: admin.id,
+        note: 'Gabe gemäß Medikationsplan'
+      });
+    }
+
+    med.currentStock = stock;
+  }
+
+  return entries;
 }
 
 const MD_ORGANISATIONS_GKV = ['Medizinischer Dienst Baden-Württemberg', 'Medizinischer Dienst Bayern'];
@@ -464,6 +532,7 @@ const INITIAL_SIS_RECORDS = generateSisRecords(INITIAL_PATIENTS);
 const INITIAL_RISK_ASSESSMENTS = generateRiskAssessments(INITIAL_PATIENTS);
 const INITIAL_MEDICATIONS = generateMedications(INITIAL_PATIENTS);
 const INITIAL_MEDICATION_ADMINISTRATIONS = generateMedicationAdministrations(INITIAL_MEDICATIONS);
+const INITIAL_BTM_LEDGER = generateBtmLedger(INITIAL_MEDICATIONS, INITIAL_MEDICATION_ADMINISTRATIONS);
 const INITIAL_PFLEGEGRAD_HISTORY = generatePflegegradHistory(INITIAL_PATIENTS);
 const INITIAL_MDK_ASSESSMENTS = generateMdkAssessments(INITIAL_PATIENTS);
 const INITIAL_CONTACTS = generateContacts(INITIAL_PATIENTS);
@@ -485,6 +554,7 @@ export class PatientStateService {
   private readonly _pflegegradHistory = signal<PflegegradHistoryEntry[]>(INITIAL_PFLEGEGRAD_HISTORY);
   private readonly _mdkAssessments = signal<MdkAssessment[]>(INITIAL_MDK_ASSESSMENTS);
   private readonly _contacts = signal<Contact[]>(INITIAL_CONTACTS);
+  private readonly _btmLedger = signal<BtmLedgerEntry[]>(INITIAL_BTM_LEDGER);
 
   readonly patients = this._patients.asReadonly();
   readonly sisRecords = this._sisRecords.asReadonly();
@@ -494,6 +564,7 @@ export class PatientStateService {
   readonly pflegegradHistory = this._pflegegradHistory.asReadonly();
   readonly mdkAssessments = this._mdkAssessments.asReadonly();
   readonly contacts = this._contacts.asReadonly();
+  readonly btmLedger = this._btmLedger.asReadonly();
 
   readonly activePatients = computed(() => this._patients().filter((p) => p.active));
 
@@ -526,6 +597,20 @@ export class PatientStateService {
     const limit = isoOffset(7);
     return this._medications().filter((m) => m.active && m.supplyUntil && m.supplyUntil <= limit);
   });
+
+  /**
+   * Aktive Medikamente mit Nachbestellbedarf: Lagerbestand am/unter dem Meldebestand oder
+   * Rezept-Vorrat läuft in Kürze aus – ohne bereits laufende Bestellung.
+   */
+  readonly reorderCandidates = computed(() =>
+    this._medications().filter(
+      (m) =>
+        m.active &&
+        m.reorderStatus !== 'BESTELLT' &&
+        ((m.currentStock !== undefined && m.reorderThreshold !== undefined && m.currentStock <= m.reorderThreshold) ||
+          this.isRenewalDue(m))
+    )
+  );
 
   /** Anstehende MD-Begutachtungstermine der kommenden 14 Tage (für Dashboard-/Planungshinweise). */
   readonly upcomingMdkAssessments = computed(() => {
@@ -626,7 +711,10 @@ export class PatientStateService {
       startDate: isoOffset(0),
       supplyUntil: isoOffset(30),
       note: 'Importiert aus dem bundeseinheitlichen Medikationsplan (BMP)',
-      active: true
+      active: true,
+      currentStock: entry.reorderThreshold + 10,
+      stockUnit: entry.stockUnit,
+      reorderThreshold: entry.reorderThreshold
     }));
 
     if (imported.length > 0) {
@@ -641,8 +729,35 @@ export class PatientStateService {
       .sort((a, b) => b.administeredAt.localeCompare(a.administeredAt));
   }
 
+  /**
+   * Protokolliert eine Medikamentengabe. Bei Betäubungsmitteln mit Status "GEGEBEN" wird
+   * zusätzlich automatisch ein Abgang im BTM-Bestandsbuch gebucht (lückenlose Dokumentation).
+   */
   recordMedicationAdministration(administration: MedicationAdministration): void {
     this._medicationAdministrations.update((list) => [...list, administration]);
+
+    const medication = this._medications().find((m) => m.id === administration.medicationId);
+    if (medication?.isBtm && administration.status === 'GEGEBEN') {
+      const resultingStock = Math.max(0, (medication.currentStock ?? 0) - 1);
+      this._btmLedger.update((list) => [
+        ...list,
+        {
+          id: `btm-${medication.id}-${administration.id}`,
+          medicationId: medication.id,
+          patientId: medication.patientId,
+          date: administration.administeredAt,
+          type: 'ABGANG',
+          quantity: 1,
+          unit: medication.stockUnit ?? 'Stk.',
+          resultingStock,
+          performedBy: administration.confirmedBy,
+          witnessedBy: administration.secondConfirmedBy,
+          administrationId: administration.id,
+          note: 'Gabe gemäß Medikationsplan'
+        }
+      ]);
+      this.updateMedication(medication.id, { currentStock: resultingStock });
+    }
   }
 
   // ---- Pflegegrad-Historie & MD-Begutachtung ----
@@ -711,5 +826,78 @@ export class PatientStateService {
 
   removeContact(id: string): void {
     this._contacts.update((list) => list.filter((c) => c.id !== id));
+  }
+
+  // ---- BTM-Bestandsbuch (§ 13 BtMVV) ----
+  /** Liefert das Bestandsbuch eines Betäubungsmittels chronologisch sortiert. */
+  getBtmLedger(medicationId: string): BtmLedgerEntry[] {
+    return this._btmLedger()
+      .filter((e) => e.medicationId === medicationId)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  /**
+   * Bucht eine manuelle Bestandsbewegung (Zugang, Vernichtung, Korrektur) für ein Betäubungsmittel
+   * und schreibt den resultierenden Bestand auf das Medikament fort. Abgänge durch Gaben werden
+   * stattdessen automatisch beim Protokollieren der Gabe gebucht.
+   */
+  recordBtmMovement(
+    medicationId: string,
+    type: 'ZUGANG' | 'VERNICHTUNG' | 'KORREKTUR',
+    quantity: number,
+    performedBy: string,
+    witnessedBy?: string,
+    note?: string
+  ): void {
+    const medication = this._medications().find((m) => m.id === medicationId);
+    if (!medication) return;
+
+    const currentStock = medication.currentStock ?? 0;
+    const resultingStock = type === 'ZUGANG' ? currentStock + quantity : Math.max(0, currentStock - quantity);
+
+    this._btmLedger.update((list) => [
+      ...list,
+      {
+        id: `btm-${medicationId}-${Date.now()}`,
+        medicationId,
+        patientId: medication.patientId,
+        date: new Date().toISOString(),
+        type,
+        quantity,
+        unit: medication.stockUnit ?? 'Stk.',
+        resultingStock,
+        performedBy,
+        witnessedBy,
+        note
+      }
+    ]);
+
+    this.updateMedication(medicationId, { currentStock: resultingStock });
+  }
+
+  // ---- Lagerbestand & Nachbestellung ----
+  /** Markiert ein Medikament als nachbestellt (z. B. nach telefonischer/elektronischer Bestellung bei der Apotheke). */
+  markReorderOrdered(medicationId: string): void {
+    this.updateMedication(medicationId, { reorderStatus: 'BESTELLT', lastOrderedAt: new Date().toISOString() });
+  }
+
+  /**
+   * Bucht den Wareneingang einer Nachbestellung: erhöht den Lagerbestand, verlängert den
+   * Rezept-Vorrat um 30 Tage und setzt bei Betäubungsmitteln zusätzlich einen BTM-Zugang.
+   */
+  confirmReorderDelivery(medicationId: string, quantity: number, performedBy: string): void {
+    const medication = this._medications().find((m) => m.id === medicationId);
+    if (!medication) return;
+
+    if (medication.isBtm) {
+      this.recordBtmMovement(medicationId, 'ZUGANG', quantity, performedBy, undefined, 'Wareneingang Nachbestellung');
+    } else {
+      this.updateMedication(medicationId, { currentStock: (medication.currentStock ?? 0) + quantity });
+    }
+
+    this.updateMedication(medicationId, {
+      reorderStatus: undefined,
+      supplyUntil: isoOffset(30)
+    });
   }
 }
