@@ -1,0 +1,56 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="contact-form">
+  <div class="field-row">
+    <div class="field">
+      <label for="name">Name</label>
+      <input id="name" type="text" pInputText formControlName="name" placeholder="z. B. Sabine Müller" />
+    </div>
+    <div class="field">
+      <label for="relationship">Beziehung</label>
+      <input id="relationship" type="text" pInputText formControlName="relationship" placeholder="z. B. Tochter" />
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="phone">Telefon</label>
+      <input id="phone" type="text" pInputText formControlName="phone" />
+    </div>
+    <div class="field">
+      <label for="email">E-Mail (optional)</label>
+      <input id="email" type="email" pInputText formControlName="email" />
+    </div>
+  </div>
+
+  <div class="field checkbox-field">
+    <p-checkbox formControlName="isEmergencyContact" [binary]="true" inputId="isEmergencyContact" />
+    <label for="isEmergencyContact">Als Notfallkontakt kennzeichnen</label>
+  </div>
+
+  <div class="field">
+    <label for="powersOfAttorney">Vollmachten / Verfügungen</label>
+    <p-multiselect
+      id="powersOfAttorney"
+      formControlName="powersOfAttorney"
+      [options]="poaOptions"
+      optionLabel="label"
+      optionValue="value"
+      display="chip"
+      placeholder="Vollmachten wählen"
+    />
+  </div>
+
+  <div class="field checkbox-field">
+    <p-checkbox formControlName="documentOnFile" [binary]="true" inputId="documentOnFile" />
+    <label for="documentOnFile">Dokument(e) liegen in Kopie in der Patientenakte vor</label>
+  </div>
+
+  <div class="field">
+    <label for="notes">Notiz (optional)</label>
+    <textarea id="notes" pTextarea rows="2" formControlName="notes" placeholder="Besonderheiten, Erreichbarkeit…"></textarea>
+  </div>
+
+  <div class="form-actions">
+    <p-button label="Abbrechen" severity="secondary" [text]="true" type="button" (onClick)="cancel.emit()" />
+    <p-button label="Speichern" icon="pi pi-check" type="submit" />
+  </div>
+</form>

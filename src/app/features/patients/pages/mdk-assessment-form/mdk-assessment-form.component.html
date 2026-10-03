@@ -1,0 +1,32 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="mdk-form">
+  <div class="field">
+    <label for="scheduledDate">Termin</label>
+    <p-datepicker id="scheduledDate" formControlName="scheduledDate" dateFormat="dd.mm.yy" [showIcon]="true" />
+  </div>
+
+  <div class="field">
+    <label for="assessorOrganization">Begutachtende Stelle</label>
+    <input
+      id="assessorOrganization"
+      type="text"
+      pInputText
+      formControlName="assessorOrganization"
+      placeholder="z. B. Medizinischer Dienst Baden-Württemberg"
+    />
+  </div>
+
+  <div class="field">
+    <label for="reason">Anlass</label>
+    <input id="reason" type="text" pInputText formControlName="reason" placeholder="z. B. Höherstufungsantrag" />
+  </div>
+
+  <div class="field">
+    <label for="note">Notiz (optional)</label>
+    <textarea id="note" pTextarea rows="2" formControlName="note" placeholder="Besonderheiten, Vorbereitung…"></textarea>
+  </div>
+
+  <div class="form-actions">
+    <p-button label="Abbrechen" severity="secondary" [text]="true" type="button" (onClick)="cancel.emit()" />
+    <p-button label="Termin anlegen" icon="pi pi-check" type="submit" />
+  </div>
+</form>

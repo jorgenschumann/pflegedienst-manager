@@ -11,15 +11,22 @@ import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { TextareaModule } from 'primeng/textarea';
+import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { PatientStateService } from '../../services/patient-state.service';
 import {
-  MEDICATION_ADMINISTRATION_STATUS_LABELS,
-  MEDICATION_FORM_LABELS,
-  MEDICATION_TIME_LABELS,
+  Contact,
+  MdkAssessment,
+  MDK_STATUS_LABELS,
   MedicationAdministrationStatus,
   MedicationForm,
   MedicationTime,
+  MEDICATION_ADMINISTRATION_STATUS_LABELS,
+  MEDICATION_FORM_LABELS,
+  MEDICATION_TIME_LABELS,
+  Pflegegrad,
+  POWER_OF_ATTORNEY_LABELS,
+  PowerOfAttorneyType,
   RiskAssessment,
   RISK_ASSESSMENT_LABELS,
   SIS_THEMENFELD_LABELS,
@@ -27,6 +34,8 @@ import {
 } from '../../models';
 import { MedicationFormComponent } from '../medication-form/medication-form.component';
 import { MedicationAdministrationComponent } from '../medication-administration/medication-administration.component';
+import { ContactFormComponent } from '../contact-form/contact-form.component';
+import { MdkAssessmentFormComponent } from '../mdk-assessment-form/mdk-assessment-form.component';
 
 @Component({
   selector: 'app-patient-detail',
@@ -41,9 +50,12 @@ import { MedicationAdministrationComponent } from '../medication-administration/
     DialogModule,
     TooltipModule,
     TextareaModule,
+    SelectModule,
     FormsModule,
     MedicationFormComponent,
-    MedicationAdministrationComponent
+    MedicationAdministrationComponent,
+    ContactFormComponent,
+    MdkAssessmentFormComponent
   ],
   templateUrl: './patient-detail.component.html',
   styleUrl: './patient-detail.component.scss'
@@ -65,13 +77,28 @@ export class PatientDetailComponent {
   readonly activeMedications = computed(() => this.medications().filter((m) => m.active));
   readonly discontinuedMedications = computed(() => this.medications().filter((m) => !m.active));
   readonly administrations = computed(() => this.patientState.getMedicationAdministrations(this.patientId()));
+  readonly pflegegradHistory = computed(() => this.patientState.getPflegegradHistory(this.patientId()));
+  readonly mdkAssessments = computed(() => this.patientState.getMdkAssessments(this.patientId()));
+  readonly contacts = computed(() => this.patientState.getContacts(this.patientId()));
 
   readonly themenfeldLabels = SIS_THEMENFELD_LABELS;
   readonly riskLabels = RISK_ASSESSMENT_LABELS;
+  readonly mdkStatusLabels = MDK_STATUS_LABELS;
+  readonly poaLabels = POWER_OF_ATTORNEY_LABELS;
 
   readonly medicationDialogVisible = signal(false);
   readonly administrationDialogVisible = signal(false);
   readonly bmpImportMessage = signal<string | null>(null);
+  readonly contactDialogVisible = signal(false);
+  readonly editingContact = signal<Contact | null>(null);
+  readonly mdkDialogVisible = signal(false);
+  readonly completeDialogVisible = signal(false);
+  readonly completingAssessment = signal<MdkAssessment | null>(null);
+  readonly completeResultGrad = signal<Pflegegrad>(2);
+  readonly pflegegradOptions = [0, 1, 2, 3, 4, 5].map((g) => ({
+    label: g === 0 ? 'Kein Pflegegrad' : `Pflegegrad ${g}`,
+    value: g as Pflegegrad
+  }));
 
   medicationFormLabel(form: MedicationForm): string {
     return MEDICATION_FORM_LABELS[form];
@@ -105,6 +132,20 @@ export class PatientDetailComponent {
     if (level === 'HOCH') return 'danger';
     if (level === 'MITTEL') return 'warn';
     return 'success';
+  }
+
+  mdkStatusSeverity(status: MdkAssessment['status']): 'success' | 'info' | 'danger' {
+    if (status === 'DURCHGEFUEHRT') return 'success';
+    if (status === 'ABGESAGT') return 'danger';
+    return 'info';
+  }
+
+  mdkStatusLabel(status: MdkAssessment['status']): string {
+    return this.mdkStatusLabels[status];
+  }
+
+  poaLabel(poa: PowerOfAttorneyType): string {
+    return this.poaLabels[poa];
   }
 
   age(dateOfBirth: string): number {
@@ -182,7 +223,51 @@ export class PatientDetailComponent {
     }
   }
 
+  // ---- Angehörige & Vollmachten ----
+  openNewContact(): void {
+    this.editingContact.set(null);
+    this.contactDialogVisible.set(true);
+  }
+
+  editContact(contact: Contact): void {
+    this.editingContact.set(contact);
+    this.contactDialogVisible.set(true);
+  }
+
+  removeContact(id: string): void {
+    this.patientState.removeContact(id);
+  }
+
+  closeContactDialog(): void {
+    this.contactDialogVisible.set(false);
+    this.editingContact.set(null);
+  }
+
+  // ---- Pflegegrad & MD-Begutachtung ----
+  openNewMdkAssessment(): void {
+    this.mdkDialogVisible.set(true);
+  }
+
+  cancelMdkAssessment(id: string): void {
+    this.patientState.cancelMdkAssessment(id);
+  }
+
+  openCompleteDialog(assessment: MdkAssessment): void {
+    this.completingAssessment.set(assessment);
+    this.completeResultGrad.set(this.patient()?.pflegegrad ?? 2);
+    this.completeDialogVisible.set(true);
+  }
+
+  confirmCompleteAssessment(): void {
+    const assessment = this.completingAssessment();
+    if (!assessment) return;
+    this.patientState.completeMdkAssessment(assessment.id, this.completeResultGrad());
+    this.completeDialogVisible.set(false);
+    this.completingAssessment.set(null);
+  }
+
   goBack(): void {
     this.router.navigate(['/patienten']);
   }
 }
+

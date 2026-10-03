@@ -1,10 +1,14 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
+  Contact,
+  MdkAssessment,
   Medication,
   MedicationAdministration,
   MedicationTime,
   Patient,
   Pflegegrad,
+  PflegegradHistoryEntry,
+  PowerOfAttorneyType,
   RiskAssessment,
   RiskAssessmentType,
   RiskLevel,
@@ -337,11 +341,132 @@ function generateMedicationAdministrations(medications: Medication[]): Medicatio
   return administrations;
 }
 
+const MD_ORGANISATIONS_GKV = ['Medizinischer Dienst Baden-Württemberg', 'Medizinischer Dienst Bayern'];
+const MD_ORGANISATION_PKV = 'MEDICPROOF GmbH';
+
+/**
+ * Pflegegrad-Historie je Patient: bei gut der Hälfte der Patienten mit Pflegegrad ≥ 2 wird
+ * demohaft eine vorangegangene, niedrigere Einstufung samt späterer Höherstufung erzeugt.
+ */
+function generatePflegegradHistory(patients: Patient[]): PflegegradHistoryEntry[] {
+  const entries: PflegegradHistoryEntry[] = [];
+
+  for (const patient of patients) {
+    if (patient.pflegegrad === 0) continue;
+
+    const hadPriorGrade = patient.pflegegrad > 1 && rng() > 0.5;
+    const currentDecisionDate = patient.pflegegradSince ?? isoYearsAgo(1);
+
+    if (hadPriorGrade) {
+      const priorGrad = (patient.pflegegrad - 1) as Pflegegrad;
+      const priorDecisionDate = isoYearsAgo(2 + Math.floor(rng() * 3));
+      entries.push({
+        id: `pgh-${patient.id}-1`,
+        patientId: patient.id,
+        pflegegrad: priorGrad,
+        validFrom: priorDecisionDate,
+        decisionDate: priorDecisionDate,
+        note: 'Erstbegutachtung'
+      });
+    }
+
+    entries.push({
+      id: `pgh-${patient.id}-2`,
+      patientId: patient.id,
+      pflegegrad: patient.pflegegrad,
+      validFrom: currentDecisionDate,
+      decisionDate: currentDecisionDate,
+      note: hadPriorGrade ? 'Höherstufung nach Folgebegutachtung' : 'Erstbegutachtung'
+    });
+  }
+
+  return entries;
+}
+
+/**
+ * MD-Begutachtungstermine je aktivem Patienten: ein vergangener Termin zur Historie sowie
+ * bei ca. 35 % der Patienten zusätzlich ein anstehender Folge-/Höherstufungstermin.
+ */
+function generateMdkAssessments(patients: Patient[]): MdkAssessment[] {
+  const assessments: MdkAssessment[] = [];
+
+  for (const patient of patients.filter((p) => p.active && p.pflegegrad > 0)) {
+    const organisation = patient.insurance.type === 'PKV' ? MD_ORGANISATION_PKV : pick(MD_ORGANISATIONS_GKV);
+
+    assessments.push({
+      id: `mdk-${patient.id}-1`,
+      patientId: patient.id,
+      scheduledDate: patient.pflegegradSince ?? isoYearsAgo(1),
+      status: 'DURCHGEFUEHRT',
+      assessorOrganization: organisation,
+      reason: 'Erstbegutachtung',
+      resultPflegegrad: patient.pflegegrad
+    });
+
+    if (rng() > 0.65) {
+      assessments.push({
+        id: `mdk-${patient.id}-2`,
+        patientId: patient.id,
+        scheduledDate: isoOffset(3 + Math.floor(rng() * 45)),
+        status: 'GEPLANT',
+        assessorOrganization: organisation,
+        reason: 'Höherstufungsantrag'
+      });
+    }
+  }
+
+  return assessments;
+}
+
+/**
+ * Kontakte je Patient: aus der bestehenden rechtlichen Vertretung/Notfallkontakt abgeleitet
+ * und um plausible Vollmachtsangaben ergänzt (Vorsorgevollmacht, Patientenverfügung, Betreuung).
+ */
+function generateContacts(patients: Patient[]): Contact[] {
+  const contacts: Contact[] = [];
+
+  for (const patient of patients) {
+    if (patient.legalRepresentative) {
+      const rep = patient.legalRepresentative;
+      const powersOfAttorney: PowerOfAttorneyType[] = rep.isLegalGuardian
+        ? ['GERICHTLICHE_BETREUUNG']
+        : ['VORSORGEVOLLMACHT', ...(rng() > 0.5 ? (['PATIENTENVERFUEGUNG'] as PowerOfAttorneyType[]) : [])];
+
+      contacts.push({
+        id: `contact-${patient.id}-rep`,
+        patientId: patient.id,
+        name: rep.name,
+        relationship: rep.relationship,
+        phone: rep.phone,
+        isEmergencyContact: false,
+        powersOfAttorney,
+        documentOnFile: rng() > 0.25
+      });
+    }
+
+    contacts.push({
+      id: `contact-${patient.id}-emg`,
+      patientId: patient.id,
+      name: patient.emergencyContact.name,
+      relationship: patient.emergencyContact.relationship,
+      phone: patient.emergencyContact.phone,
+      isEmergencyContact: true,
+      powersOfAttorney: [],
+      documentOnFile: false
+    });
+  }
+
+  return contacts;
+}
+
 const INITIAL_PATIENTS = generatePatients();
 const INITIAL_SIS_RECORDS = generateSisRecords(INITIAL_PATIENTS);
 const INITIAL_RISK_ASSESSMENTS = generateRiskAssessments(INITIAL_PATIENTS);
 const INITIAL_MEDICATIONS = generateMedications(INITIAL_PATIENTS);
 const INITIAL_MEDICATION_ADMINISTRATIONS = generateMedicationAdministrations(INITIAL_MEDICATIONS);
+const INITIAL_PFLEGEGRAD_HISTORY = generatePflegegradHistory(INITIAL_PATIENTS);
+const INITIAL_MDK_ASSESSMENTS = generateMdkAssessments(INITIAL_PATIENTS);
+const INITIAL_CONTACTS = generateContacts(INITIAL_PATIENTS);
 
 /**
  * Zentraler Patienten-State-Service (Stammdaten, SIS-Dokumentation, Risikoeinschätzungen).
@@ -357,12 +482,18 @@ export class PatientStateService {
   private readonly _medicationAdministrations = signal<MedicationAdministration[]>(
     INITIAL_MEDICATION_ADMINISTRATIONS
   );
+  private readonly _pflegegradHistory = signal<PflegegradHistoryEntry[]>(INITIAL_PFLEGEGRAD_HISTORY);
+  private readonly _mdkAssessments = signal<MdkAssessment[]>(INITIAL_MDK_ASSESSMENTS);
+  private readonly _contacts = signal<Contact[]>(INITIAL_CONTACTS);
 
   readonly patients = this._patients.asReadonly();
   readonly sisRecords = this._sisRecords.asReadonly();
   readonly riskAssessments = this._riskAssessments.asReadonly();
   readonly medications = this._medications.asReadonly();
   readonly medicationAdministrations = this._medicationAdministrations.asReadonly();
+  readonly pflegegradHistory = this._pflegegradHistory.asReadonly();
+  readonly mdkAssessments = this._mdkAssessments.asReadonly();
+  readonly contacts = this._contacts.asReadonly();
 
   readonly activePatients = computed(() => this._patients().filter((p) => p.active));
 
@@ -394,6 +525,15 @@ export class PatientStateService {
   readonly medicationsDueForRenewal = computed(() => {
     const limit = isoOffset(7);
     return this._medications().filter((m) => m.active && m.supplyUntil && m.supplyUntil <= limit);
+  });
+
+  /** Anstehende MD-Begutachtungstermine der kommenden 14 Tage (für Dashboard-/Planungshinweise). */
+  readonly upcomingMdkAssessments = computed(() => {
+    const todayIso = isoOffset(0);
+    const limit = isoOffset(14);
+    return this._mdkAssessments().filter(
+      (a) => a.status === 'GEPLANT' && a.scheduledDate >= todayIso && a.scheduledDate <= limit
+    );
   });
 
   // ---- Patient CRUD ----
@@ -503,5 +643,73 @@ export class PatientStateService {
 
   recordMedicationAdministration(administration: MedicationAdministration): void {
     this._medicationAdministrations.update((list) => [...list, administration]);
+  }
+
+  // ---- Pflegegrad-Historie & MD-Begutachtung ----
+  getPflegegradHistory(patientId: string): PflegegradHistoryEntry[] {
+    return this._pflegegradHistory()
+      .filter((e) => e.patientId === patientId)
+      .sort((a, b) => a.validFrom.localeCompare(b.validFrom));
+  }
+
+  getMdkAssessments(patientId: string): MdkAssessment[] {
+    return this._mdkAssessments()
+      .filter((a) => a.patientId === patientId)
+      .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate));
+  }
+
+  scheduleMdkAssessment(assessment: MdkAssessment): void {
+    this._mdkAssessments.update((list) => [...list, assessment]);
+  }
+
+  /**
+   * Markiert einen Begutachtungstermin als durchgeführt und trägt das Ergebnis ein. Weicht der
+   * festgestellte Pflegegrad vom bisherigen ab, wird automatisch ein neuer Historien-Eintrag
+   * angelegt und der Pflegegrad des Patienten entsprechend aktualisiert (Höher-/Rückstufung).
+   */
+  completeMdkAssessment(id: string, resultPflegegrad: Pflegegrad, note?: string): void {
+    const assessment = this._mdkAssessments().find((a) => a.id === id);
+    if (!assessment) return;
+
+    this._mdkAssessments.update((list) =>
+      list.map((a) => (a.id === id ? { ...a, status: 'DURCHGEFUEHRT' as const, resultPflegegrad, note } : a))
+    );
+
+    const patient = this.getPatient(assessment.patientId);
+    if (patient && patient.pflegegrad !== resultPflegegrad) {
+      const decisionDate = isoOffset(0);
+      this._pflegegradHistory.update((list) => [
+        ...list,
+        {
+          id: `pgh-${assessment.patientId}-${Date.now()}`,
+          patientId: assessment.patientId,
+          pflegegrad: resultPflegegrad,
+          validFrom: decisionDate,
+          decisionDate,
+          note: 'Neueinstufung nach MD-Begutachtung'
+        }
+      ]);
+      this.updatePatient(assessment.patientId, { pflegegrad: resultPflegegrad, pflegegradSince: decisionDate });
+    }
+  }
+
+  cancelMdkAssessment(id: string): void {
+    this._mdkAssessments.update((list) => list.map((a) => (a.id === id ? { ...a, status: 'ABGESAGT' as const } : a)));
+  }
+
+  // ---- Angehörige & Vollmachten ----
+  getContacts(patientId: string): Contact[] {
+    return this._contacts().filter((c) => c.patientId === patientId);
+  }
+
+  upsertContact(contact: Contact): void {
+    this._contacts.update((list) => {
+      const exists = list.some((c) => c.id === contact.id);
+      return exists ? list.map((c) => (c.id === contact.id ? contact : c)) : [...list, contact];
+    });
+  }
+
+  removeContact(id: string): void {
+    this._contacts.update((list) => list.filter((c) => c.id !== id));
   }
 }
